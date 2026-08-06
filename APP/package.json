@@ -1,0 +1,92 @@
+{
+  "name": "nhtech-gestion",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "electron/main.js",
+  "author": "NH TECH",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "generate:icon": "node scripts/generate-icon.mjs",
+    "desktop:dev": "set \"PATH=%PATH%;C:\\Program Files\\nodejs\" && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "desktop:dist": "set \"PATH=%PATH%;C:\\Program Files\\nodejs\" && node scripts/generate-icon.mjs && tsc -b && vite build && electron-builder --win nsis",
+    "mobile:sync": "npm run build && npx cap sync android",
+    "mobile:open": "npx cap open android",
+    "mobile:run": "npm run build && npx cap run android",
+    "mobile:apk:debug": "npm run build && npx cap sync android && cd android && gradlew.bat assembleDebug",
+    "mobile:apk:release": "npm run build && npx cap sync android && cd android && gradlew.bat assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/core": "^6.1.0",
+    "date-fns": "^4.1.0",
+    "dexie": "^4.3.0",
+    "dexie-react-hooks": "^4.2.0",
+    "firebase": "^12.8.0",
+    "lucide-react": "^0.563.0",
+    "react": "^19.2.0",
+    "react-big-calendar": "^1.19.4",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0",
+    "recharts": "^3.7.0",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.10"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0",
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-big-calendar": "^1.16.3",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.1.2",
+    "electron": "^34.0.0",
+    "electron-builder": "^24.13.3",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.34.5",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4",
+    "wait-on": "^8.0.5"
+  },
+  "build": {
+    "appId": "com.nhtech.gestion",
+    "productName": "NH TECH Gestion",
+    "files": [
+      "dist/**",
+      "build/**",
+      "electron/**",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "publisherName": "NH TECH",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "license": "build/license.txt"
+    }
+  }
+}

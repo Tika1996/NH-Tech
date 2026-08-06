@@ -1,0 +1,6 @@
+{
+	"appId": "com.qalbi.itmaan.gestion",
+	"appName": "Qalbi ITMAAN Gestion",
+	"webDir": "dist",
+	"bundledWebRuntime": false
+}

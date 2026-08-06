@@ -1,0 +1,26 @@
+# Dependencies & Build
+node_modules
+dist
+build
+release
+build-tools
+android-sdk
+$jdkDest
+jdk*
+*.zip
+*.apk
+*.exe
+
+# Environment variables & secrets (CRITICAL - DO NOT PUSH)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+*.env
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db

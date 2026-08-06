@@ -1,0 +1,401 @@
+/*
+ * ══════════════════════════════════════════════════════════════════════════════
+ *                     NH TECH — DESIGN TOKENS (Google DESIGN.md)
+ *                     Style Cyber High-End PC Builder & SAV
+ * ══════════════════════════════════════════════════════════════════════════════
+ */
+
+:root {
+  /* ══════════════════════════════════════════════════════════════════════════
+   * COULEURS PRIMAIRES — Bleu Électrique (#0057FF)
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --color-primary-50: #E6F0FF;
+  --color-primary-100: #CCE0FF;
+  --color-primary-200: #99C2FF;
+  --color-primary-300: #66A3FF;
+  --color-primary-400: #3385FF;
+  --color-primary-500: #0057FF;  /* Bleu Électrique Principal */
+  --color-primary-600: #0046CC;
+  --color-primary-700: #003599;  /* Dominante Sombre */
+  --color-primary-800: #002466;
+  --color-primary-900: #001333;
+  --color-primary-950: #000A1A;
+
+  /* Aliases de Marque */
+  --color-brand: #0057FF;
+  --color-brand-light: #1A73FF;
+  --color-brand-dark: #003599;
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * COULEURS D'ACCENTUATION — Cyan Néon (#00F0FF)
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --color-accent-50: #E6FCFF;
+  --color-accent-100: #CCFAFF;
+  --color-accent-200: #99F5FF;
+  --color-accent-300: #66F0FF;
+  --color-accent-400: #33EBFF;
+  --color-accent-500: #00F0FF;  /* Cyan Électrique Principal */
+  --color-accent-600: #00C4D4;
+  --color-accent-700: #0097AA;
+  --color-accent-800: #006B7F;
+  --color-accent-900: #004055;
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * COULEURS SÉMANTIQUES (WCAG AA Compliant)
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --color-success-500: #22C55E;
+  --color-warning-500: #F59E0B;
+  --color-error-500: #EF4444;
+  --color-info-500: #0057FF;
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * COULEURS NEUTRES & THÈME SOMBRE CYBER (Default Dark)
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --color-neutral-0: #FFFFFF;
+  --color-neutral-50: #F8FAFC;
+  --color-neutral-100: #E2E8F0;
+  --color-neutral-200: #C0C6CC;  /* Silver */
+  --color-neutral-400: #8E9AAF;  /* Text Secondary */
+  --color-neutral-600: #4B5563;  /* Steel Gray */
+  --color-neutral-700: #1F2833;  /* Gris Anthracite Surface */
+  --color-neutral-800: #14161C;  /* Dark Surface Card */
+  --color-neutral-900: #0B0C10;  /* Noir Profond BG */
+
+  /* Surface & Elements Variables (Cyber Dark Mode Default) */
+  --bg-primary: #0B0C10;
+  --bg-secondary: #1F2833;
+  --bg-tertiary: #14161C;
+  --bg-elevated: #1F2833;
+  --bg-card: #1F2833;
+  --bg-overlay: rgba(11, 12, 16, 0.85);
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #8E9AAF;
+  --text-tertiary: #4B5563;
+  --text-inverse: #0B0C10;
+  --text-brand: #0057FF;
+  --text-accent: #00F0FF;
+
+  --border-primary: rgba(0, 240, 255, 0.15);
+  --border-secondary: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-focus: #0057FF;
+  --border-accent: #00F0FF;
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * DÉGRADÉS OFFICIELS NH TECH
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --grad-electric-tech: linear-gradient(135deg, #0057FF 0%, #00F0FF 100%);
+  --grad-dark-cyber: linear-gradient(180deg, #0B0C10 0%, #1F2833 100%);
+  --grad-blue-black: linear-gradient(135deg, #0057FF 0%, #0B0C10 100%);
+  --grad-black-blue: linear-gradient(180deg, #0B0C10 0%, #0057FF 100%);
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * LUEURS NÉON & EFFETS NÉON (Elevation & Glows)
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --glow-blue: 0 0 20px rgba(0, 87, 255, 0.35);
+  --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.40);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.50);
+  --shadow-lg: 0 12px 35px rgba(0, 0, 0, 0.65);
+  --shadow-glow: 0 0 25px rgba(0, 240, 255, 0.25);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.50);
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * TYPOGRAPHIE OFFICIELLE (design.md)
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --font-display: 'Orbitron', 'Cairo', sans-serif;
+  --font-body: 'Manrope', 'IBM Plex Sans Arabic', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Tailles Typographiques - Ultra Compact Scale (High-Density macOS / Windows Desktop App) */
+  --text-xs: 0.65rem;      /* 9.5px - Captions & Micro Badges */
+  --text-sm: 0.75rem;      /* 11px - Secondary & Table Data */
+  --text-base: 0.8125rem;  /* 12.5px - Primary Body & Inputs */
+  --text-lg: 0.9375rem;    /* 14px - Subtitles & Card Headers */
+  --text-xl: 1.05rem;      /* 15.5px - Section Titles */
+  --text-2xl: 1.2rem;      /* 18px - Page Titles */
+  --text-3xl: 1.45rem;     /* 21px - Hero Stats */
+  --text-4xl: 1.85rem;     /* 27px - Display Headings */
+  --text-5xl: 2.35rem;     /* 35px - Giant Numbers */
+  --text-6xl: 2.85rem;     /* 42px - Hero Banner */
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * ESPACEMENT & ARRONDIS
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --ease-cyber: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ══════════════════════════════════════════════════════════════════════════
+   * LAYERS & Z-INDEX ARCHITECTURE
+   * ══════════════════════════════════════════════════════════════════════════ */
+  --z-deep: -1;
+  --z-base: 0;
+  --z-above: 10;
+  --z-sticky: 100;
+  --z-header: 900;
+  --z-sidebar: 1000;
+  --z-fixed: 1000;
+  --z-modal-backdrop: 2000;
+  --z-modal: 2100;
+  --z-toast: 9999;
+}
+
+/* Mode Sombre High-End Cyber Gaming */
+[data-theme="dark"],
+.dark {
+  --bg-primary: #050b1a;
+  --bg-secondary: #0b142d;
+  --bg-tertiary: #101c3d;
+  --bg-elevated: #0f1833;
+  --bg-card: #0f1833;
+  --bg-overlay: rgba(5, 11, 26, 0.90);
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #8E9AAF;
+  --text-tertiary: #64748B;
+  --text-inverse: #050b1a;
+
+  --border-primary: rgba(0, 85, 255, 0.3);
+  --border-secondary: #1a274c;
+  --border-color: #1a274c;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.50);
+  --shadow-lg: 0 12px 35px rgba(0, 0, 0, 0.65);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.50);
+  --shadow-glow: 0 0 25px rgba(0, 240, 255, 0.25);
+  --glow-blue: 0 0 20px rgba(0, 87, 255, 0.35);
+  --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.40);
+}
+
+/* Mode Clair Premium Clean */
+[data-theme="light"],
+.light {
+  --bg-primary: #f4f7fc;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #edf2f9;
+  --bg-elevated: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-overlay: rgba(244, 247, 252, 0.92);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --text-inverse: #FFFFFF;
+  --text-brand: #0057FF;
+  --text-accent: #0057FF;
+
+  --border-primary: rgba(0, 85, 255, 0.15);
+  --border-secondary: #e2e8f0;
+  --border-color: #e2e8f0;
+  --border-focus: #0057FF;
+  --border-accent: #0057FF;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.09);
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 0 transparent;
+  --glow-blue: 0 0 0 transparent;
+  --glow-cyan: 0 0 0 transparent;
+
+  --grad-electric-tech: linear-gradient(135deg, #0057FF 0%, #3385FF 100%);
+  --grad-dark-cyber: linear-gradient(180deg, #f4f7fc 0%, #FFFFFF 100%);
+  --grad-blue-black: linear-gradient(135deg, #0057FF 0%, #f4f7fc 100%);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * MOTIFS CYBER TECH & GLASSMORPHISM
+ * ══════════════════════════════════════════════════════════════════════════════ */
+.pattern-pcb {
+  background-image: radial-gradient(rgba(0, 240, 255, 0.12) 1px, transparent 1px),
+                    radial-gradient(rgba(0, 87, 255, 0.12) 1px, #0B0C10 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.pattern-hexagone {
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 0l10.392 6v12L12 24 1.608 18V6z' stroke='%2300F0FF' stroke-opacity='0.06' stroke-width='1' fill='none'/%3E%3C/svg%3E");
+}
+
+.glass-card {
+  background: rgba(31, 40, 51, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.glow-border {
+  position: relative;
+}
+.glow-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--grad-electric-tech);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * BOUTON FERMER UNIFIÉ POUR TOUS LES FORMULAIRES & MODALES (UX CAISSE POS SAV)
+ * ══════════════════════════════════════════════════════════════════════════════ */
+.nh-modal-close-btn,
+.icon-btn-close,
+.icon-close-modal,
+.btn-icon-close,
+.pos-close-btn,
+.modal-close-btn,
+.modal-header .btn-icon,
+.modal-header .icon-btn,
+.modal-header .btn-close,
+.modal-header .close-btn,
+.modal-header button.icon-btn,
+.modal-header button.btn-icon,
+.customer-modal .modal-header button,
+.payment-modal .modal-header button,
+.pos-cart-modal .modal-header button,
+.smart-alerts-header .close-btn,
+.return-header .close-btn,
+.drawer-header button,
+.modal-header .close {
+  margin-left: auto !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--border-color, rgba(226, 232, 240, 0.2)) !important;
+  color: var(--text-secondary, #8E9AAF) !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  outline: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+  flex-shrink: 0 !important;
+}
+
+[dir="rtl"] .nh-modal-close-btn,
+[dir="rtl"] .icon-btn-close,
+[dir="rtl"] .icon-close-modal,
+[dir="rtl"] .btn-icon-close,
+[dir="rtl"] .modal-header .btn-icon,
+[dir="rtl"] .modal-header .icon-btn,
+[dir="rtl"] .modal-header .btn-close,
+[dir="rtl"] .modal-header .close-btn {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+.nh-modal-close-btn:hover,
+.icon-btn-close:hover,
+.icon-close-modal:hover,
+.btn-icon-close:hover,
+.pos-close-btn:hover,
+.modal-close-btn:hover,
+.modal-header .btn-icon:hover,
+.modal-header .icon-btn:hover,
+.modal-header .btn-close:hover,
+.modal-header .close-btn:hover,
+.smart-alerts-header .close-btn:hover,
+.return-header .close-btn:hover,
+.drawer-header button:hover {
+  background: rgba(239, 68, 68, 0.18) !important;
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  transform: scale(1.08) rotate(90deg) !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.35) !important;
+}
+
+.nh-modal-close-btn:active,
+.icon-btn-close:active,
+.icon-close-modal:active,
+.btn-icon-close:active,
+.pos-close-btn:active,
+.modal-close-btn:active,
+.modal-header .btn-icon:active,
+.modal-header .icon-btn:active,
+.modal-header .btn-close:active,
+.modal-header .close-btn:active {
+  transform: scale(0.92) !important;
+}
+
+/* Version Mode Sombre / Cyber Dark */
+[data-theme="dark"] .nh-modal-close-btn,
+[data-theme="dark"] .icon-btn-close,
+[data-theme="dark"] .icon-close-modal,
+[data-theme="dark"] .btn-icon-close,
+[data-theme="dark"] .modal-header .btn-icon,
+[data-theme="dark"] .modal-header .icon-btn,
+[data-theme="dark"] .modal-header .btn-close,
+[data-theme="dark"] .modal-header .close-btn,
+.dark .nh-modal-close-btn,
+.dark .icon-btn-close,
+.dark .icon-close-modal,
+.dark .btn-icon-close,
+.dark .modal-header .btn-icon,
+.dark .modal-header .icon-btn,
+.dark .modal-header .btn-close,
+.dark .modal-header .close-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .nh-modal-close-btn:hover,
+[data-theme="dark"] .icon-btn-close:hover,
+[data-theme="dark"] .icon-close-modal:hover,
+[data-theme="dark"] .btn-icon-close:hover,
+[data-theme="dark"] .modal-header .btn-icon:hover,
+[data-theme="dark"] .modal-header .icon-btn:hover,
+[data-theme="dark"] .modal-header .btn-close:hover,
+[data-theme="dark"] .modal-header .close-btn:hover,
+.dark .nh-modal-close-btn:hover,
+.dark .icon-btn-close:hover,
+.dark .icon-close-modal:hover,
+.dark .btn-icon-close:hover,
+.dark .modal-header .btn-icon:hover,
+.dark .modal-header .icon-btn:hover,
+.dark .modal-header .btn-close:hover,
+.dark .modal-header .close-btn:hover {
+  background: rgba(239, 68, 68, 0.22) !important;
+  color: #ff4d4d !important;
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4) !important;
+}
