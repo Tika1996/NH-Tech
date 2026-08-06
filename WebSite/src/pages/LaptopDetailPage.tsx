@@ -562,7 +562,7 @@ export default function LaptopDetailPage() {
                     fontWeight: 900,
                     fontSize: '0.98rem',
                     background: (laptop.stock || 0) <= 0 ? '#94A3B8' : '#1E60FF',
-                    justify: 'center',
+                    justifyContent: 'center',
                     boxShadow: (laptop.stock || 0) <= 0 ? 'none' : '0 6px 20px rgba(30,96,255,0.35)',
                     cursor: (laptop.stock || 0) <= 0 ? 'not-allowed' : 'pointer'
                   }}

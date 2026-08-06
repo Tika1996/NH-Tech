@@ -440,7 +440,7 @@ export function ClientSpaceModal({ isOpen, onClose }: ClientSpaceModalProps) {
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontSize: '0.88rem', fontWeight: isCompleted ? 700 : 500, color: isCompleted ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
-                                {typeof step.statusLabel === 'object' ? (step.statusLabel[isAr ? 'ar' : 'fr'] || step.statusLabel.fr) : step.statusLabel}
+                                {typeof step.statusLabel === 'object' ? ((step.statusLabel as any)[isAr ? 'ar' : 'fr'] || (step.statusLabel as any).fr) : step.statusLabel}
                               </span>
                               <span style={{
                                 fontSize: '0.75rem',

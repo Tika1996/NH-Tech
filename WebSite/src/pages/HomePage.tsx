@@ -361,7 +361,7 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
             {testimonials.map((t, idx) => (
               <div key={idx} className="formation-card" style={{ padding: '24px', borderRadius: '18px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #0057FF 0%, #00F0FF 100%)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
                       {t.name[0]}
@@ -466,7 +466,7 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: '40px', alignItems: 'center' }}>
             
             {/* Left 3D Glowing Sphere Graphic */}
-            <div style={{ textCenter: 'center', position: 'relative' }}>
+            <div style={{ textAlign: 'center', position: 'relative' }}>
               <div style={{
                 width: '260px',
                 height: '260px',
