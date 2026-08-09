@@ -7,68 +7,73 @@ interface ClientSpaceModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialCode?: string;
+  initialPhone?: string;
   initialTab?: 'delivery' | 'repair';
 }
 
-export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: ClientSpaceModalProps) {
+export function ClientSpaceModal({ isOpen, onClose, initialCode, initialPhone, initialTab }: ClientSpaceModalProps) {
   const { lang } = useLanguage();
   const isAr = lang === 'ar';
 
   const [activeTab, setActiveTab] = useState<'delivery' | 'repair'>(initialTab || 'repair');
   const [inputCode, setInputCode] = useState(initialCode || '');
-  const [inputPhone, setInputPhone] = useState('');
+  const [inputPhone, setInputPhone] = useState(initialPhone || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [deliveryResult, setDeliveryResult] = useState<TrackingDeliveryResult | null>(null);
   const [repairResult, setRepairResult] = useState<TrackingRepairResult | null>(null);
 
-  // Auto-search immediately if initialCode is provided (e.g. from QR code scan or URL link)
+  // Auto-search immediately if initialCode and initialPhone are provided (e.g. from QR code scan or URL link)
   useEffect(() => {
-    if (isOpen && initialCode) {
-      const cleanCode = initialCode.trim();
-      setInputCode(cleanCode);
-      if (!cleanCode) return;
+    if (isOpen) {
+      const codeToUse = (initialCode || inputCode || '').trim();
+      const phoneToUse = (initialPhone || inputPhone || '').trim();
 
-      setLoading(true);
-      setError('');
-      setDeliveryResult(null);
-      setRepairResult(null);
+      if (initialCode) setInputCode(initialCode);
+      if (initialPhone) setInputPhone(initialPhone);
 
-      const doAutoTrack = async () => {
-        try {
-          // Try repair tracking first
-          const repairRes = await trackRepair(cleanCode, '');
-          if (repairRes) {
-            setActiveTab('repair');
-            setRepairResult(repairRes);
+      if (codeToUse && phoneToUse) {
+        setLoading(true);
+        setError('');
+        setDeliveryResult(null);
+        setRepairResult(null);
+
+        const doAutoTrack = async () => {
+          try {
+            // Try repair tracking first
+            const repairRes = await trackRepair(codeToUse, phoneToUse);
+            if (repairRes) {
+              setActiveTab('repair');
+              setRepairResult(repairRes);
+              setLoading(false);
+              return;
+            }
+
+            // Try delivery package tracking second
+            const deliveryRes = await trackDeliveryPackage(codeToUse, phoneToUse);
+            if (deliveryRes) {
+              setActiveTab('delivery');
+              setDeliveryResult(deliveryRes);
+              setLoading(false);
+              return;
+            }
+
+            setError(
+              isAr
+                ? 'لم يتم العثور على ملف صيانة يطابق هذا الرقم ورقم الهاتف'
+                : 'Aucun dossier SAV ne correspond à ce N° de dossier et ce N° de téléphone.'
+            );
+          } catch (err) {
+            console.error('Auto track error:', err);
+          } finally {
             setLoading(false);
-            return;
           }
+        };
 
-          // Try delivery package tracking second
-          const deliveryRes = await trackDeliveryPackage(cleanCode, '');
-          if (deliveryRes) {
-            setActiveTab('delivery');
-            setDeliveryResult(deliveryRes);
-            setLoading(false);
-            return;
-          }
-
-          setError(
-            isAr
-              ? 'لم يتم العثور على ملف صيانة يطابق هذا الرقم'
-              : 'Aucun dossier SAV ne correspond à ce N° de dossier.'
-          );
-        } catch (err) {
-          console.error('Auto track error:', err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      doAutoTrack();
+        doAutoTrack();
+      }
     }
-  }, [isOpen, initialCode]);
+  }, [isOpen, initialCode, initialPhone]);
 
   if (!isOpen) return null;
 
@@ -78,11 +83,11 @@ export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: C
     const cleanCode = inputCode.trim();
     const cleanPhone = inputPhone.trim();
 
-    if (!cleanCode) {
+    if (!cleanCode || !cleanPhone) {
       setError(
         isAr
-          ? 'يرجى إدخال رقم الطلبية أو رقم ملف الصيانة'
-          : 'Veuillez saisir votre N° de suivi ou N° de dossier SAV'
+          ? 'يرجى إدخال رقم الطلبية/الصيانة وَ رقم الهاتف للتحقق من هويتك وحماية خصوصيتك 🔒'
+          : 'Sécurité : Veuillez saisir votre N° de suivi ET votre N° de téléphone pour vérifier votre identité 🔒'
       );
       return;
     }

@@ -17,7 +17,7 @@ export function DepositSlip({ repair, onClose }: DepositSlipProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const brand = BRAND;
-  const trackingUrl = getRepairTrackingWebUrl(repair.trackingCode || repair.id);
+  const trackingUrl = getRepairTrackingWebUrl(repair.trackingCode || repair.id, repair.customerPhone);
   // High-precision standard ISO 18004 QR Code API URL
   const realQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(trackingUrl)}`;
 

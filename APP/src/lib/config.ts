@@ -157,7 +157,11 @@ export const getPieceWebUrl = (pieceId: string): string => {
     return `${baseUrl}/#/piece/${pieceId}`;
 };
 
-export const getRepairTrackingWebUrl = (repairCode?: string): string => {
+export const getRepairTrackingWebUrl = (repairCode?: string, phone?: string): string => {
     const baseUrl = getPublicWebsiteUrl();
-    return `${baseUrl}/#/?track=${encodeURIComponent(repairCode || '')}`;
+    let url = `${baseUrl}/#/?track=${encodeURIComponent(repairCode || '')}`;
+    if (phone && phone.trim()) {
+        url += `&phone=${encodeURIComponent(phone.trim())}`;
+    }
+    return url;
 };

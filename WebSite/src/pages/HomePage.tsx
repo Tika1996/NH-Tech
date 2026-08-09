@@ -55,16 +55,22 @@ export default function HomePage() {
 
   const [trackingOpen, setTrackingOpen] = useState(false);
   const [prefilledTrackingCode, setPrefilledTrackingCode] = useState('');
+  const [prefilledTrackingPhone, setPrefilledTrackingPhone] = useState('');
 
   useEffect(() => {
-    // Auto-detect tracking parameter from QR codes or direct links
+    // Auto-detect tracking code and phone parameters from QR codes or direct links
     const hashStr = window.location.hash || '';
     const searchStr = window.location.search || '';
     const combined = hashStr + searchStr;
-    const match = combined.match(/[?&](?:track|code)=([^&]+)/i);
-    if (match && match[1]) {
-      const code = decodeURIComponent(match[1]);
+    const matchCode = combined.match(/[?&](?:track|code)=([^&]+)/i);
+    const matchPhone = combined.match(/[?&]phone=([^&]+)/i);
+    if (matchCode && matchCode[1]) {
+      const code = decodeURIComponent(matchCode[1]);
       setPrefilledTrackingCode(code);
+      if (matchPhone && matchPhone[1]) {
+        const phone = decodeURIComponent(matchPhone[1]);
+        setPrefilledTrackingPhone(phone);
+      }
       setTrackingOpen(true);
     }
   }, []);
@@ -623,7 +629,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      <ClientSpaceModal isOpen={trackingOpen} onClose={() => setTrackingOpen(false)} initialCode={prefilledTrackingCode} initialTab="repair" />
+      <ClientSpaceModal
+        isOpen={trackingOpen}
+        onClose={() => setTrackingOpen(false)}
+        initialCode={prefilledTrackingCode}
+        initialPhone={prefilledTrackingPhone}
+        initialTab="repair"
+      />
     </div>
   );
 }
