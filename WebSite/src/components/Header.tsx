@@ -188,7 +188,7 @@ export default function Header({ scrolled }: HeaderProps) {
         <div className="header-inner">
           <Link to="/" className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img 
-              src={theme === 'dark' ? '/assets/logo/NH TECH-09.png' : '/assets/logo/NH TECH-04.png'} 
+              src={theme === 'dark' ? './assets/logo/NH TECH-09.png' : './assets/logo/NH TECH-04.png'} 
               alt="NH TECH - BUILD • REPAIR • UPGRADE" 
               style={{ 
                 height: scrolled ? '42px' : '50px', 

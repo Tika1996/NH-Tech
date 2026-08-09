@@ -15,7 +15,7 @@ export default function Footer() {
           <div className="footer-brand">
             <div className="footer-logo" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <img 
-                src="/assets/logo/NH TECH-09.png" 
+                src="./assets/logo/NH TECH-09.png" 
                 alt="NH TECH" 
                 style={{ height: '42px', width: 'auto', objectFit: 'contain' }} 
               />

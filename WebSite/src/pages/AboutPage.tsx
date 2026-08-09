@@ -41,7 +41,7 @@ export default function AboutPage() {
               <div style={{ textAlign: 'center' }}>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <img 
-                    src="/brand/logo.png" 
+                    src="./brand/logo.png" 
                     alt="NH TECH Logo" 
                     style={{ width: '220px', height: '220px', borderRadius: '24px', objectFit: 'contain', background: 'var(--bg-tertiary)', padding: '16px', border: '2px solid var(--color-primary)', boxShadow: 'var(--shadow-lg)' }}
                   />
