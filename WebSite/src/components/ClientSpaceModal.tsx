@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Search, Truck, AlertCircle, Loader2, Clock, Wrench, CheckCircle2, PackageCheck, MapPin, User, Tag, Calendar, Laptop, ShieldCheck, Lock, Phone } from 'lucide-react';
 import { useLanguage } from '../lib/i18n';
 import { trackDeliveryPackage, trackRepair, type TrackingDeliveryResult, type TrackingRepairResult } from '../lib/firebase';
@@ -22,6 +22,54 @@ export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: C
   const [deliveryResult, setDeliveryResult] = useState<TrackingDeliveryResult | null>(null);
   const [repairResult, setRepairResult] = useState<TrackingRepairResult | null>(null);
 
+  // Auto-search immediately if initialCode is provided (e.g. from QR code scan or URL link)
+  useEffect(() => {
+    if (isOpen && initialCode) {
+      const cleanCode = initialCode.trim();
+      setInputCode(cleanCode);
+      if (!cleanCode) return;
+
+      setLoading(true);
+      setError('');
+      setDeliveryResult(null);
+      setRepairResult(null);
+
+      const doAutoTrack = async () => {
+        try {
+          // Try repair tracking first
+          const repairRes = await trackRepair(cleanCode, '');
+          if (repairRes) {
+            setActiveTab('repair');
+            setRepairResult(repairRes);
+            setLoading(false);
+            return;
+          }
+
+          // Try delivery package tracking second
+          const deliveryRes = await trackDeliveryPackage(cleanCode, '');
+          if (deliveryRes) {
+            setActiveTab('delivery');
+            setDeliveryResult(deliveryRes);
+            setLoading(false);
+            return;
+          }
+
+          setError(
+            isAr
+              ? 'لم يتم العثور على ملف صيانة يطابق هذا الرقم'
+              : 'Aucun dossier SAV ne correspond à ce N° de dossier.'
+          );
+        } catch (err) {
+          console.error('Auto track error:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      doAutoTrack();
+    }
+  }, [isOpen, initialCode]);
+
   if (!isOpen) return null;
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -30,11 +78,11 @@ export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: C
     const cleanCode = inputCode.trim();
     const cleanPhone = inputPhone.trim();
 
-    if (!cleanCode || !cleanPhone) {
+    if (!cleanCode) {
       setError(
         isAr
-          ? 'يرجى إدخال رقم الطلبية/الصيانة وَ رقم الهاتف للتحقق من هويتك وحماية خصوصيتك 🔒'
-          : 'Sécurité : Veuillez saisir votre N° de suivi ET votre N° de téléphone pour vérifier votre identité 🔒'
+          ? 'يرجى إدخال رقم الطلبية أو رقم ملف الصيانة'
+          : 'Veuillez saisir votre N° de suivi ou N° de dossier SAV'
       );
       return;
     }
@@ -51,8 +99,8 @@ export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: C
         } else {
           setError(
             isAr
-              ? 'لم يتم العثور على طلبية تطابق هذا الرقم ورقم الهاتف أدخلاه'
-              : 'Aucune commande ne correspond à ce N° de suivi et ce N° de téléphone.'
+              ? 'لم يتم العثور على طلبية تطابق هذا الرقم'
+              : 'Aucune commande ne correspond à ce N° de suivi.'
           );
         }
       } else {
@@ -62,8 +110,8 @@ export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: C
         } else {
           setError(
             isAr
-              ? 'لم يتم العثور على ملف صيانة يطابق هذا الرقم ورقم الهاتف'
-              : 'Aucun dossier SAV ne correspond à ce N° de dossier et ce N° de téléphone.'
+              ? 'لم يتم العثور على ملف صيانة يطابق هذا الرقم'
+              : 'Aucun dossier SAV ne correspond à ce N° de dossier.'
           );
         }
       }
@@ -213,8 +261,8 @@ export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: C
             <ShieldCheck size={18} color="#0055FF" style={{ flexShrink: 0 }} />
             <span>
               {isAr
-                ? 'تتبع محمي بالكامل: يُشترط إدخال رقم الطلب/الملف وَ رقم الهاتف للتحقق من هوية صاحب الطلب.'
-                : 'Suivi sécurisé : La double vérification (N° de dossier + N° de téléphone) protège vos données.'}
+                ? 'تتبع فوري ومباشر: يتم إظهار حالة ملف الصيانة أو الطلبية تلقائياً.'
+                : 'Suivi direct & instantané : L\'état de votre dossier ou commande s\'affiche automatiquement.'}
             </span>
           </div>
 
@@ -260,7 +308,7 @@ export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: C
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   type="tel"
-                  placeholder={isAr ? '2. رقم الهاتف للتحقق...' : '2. N° de téléphone client...'}
+                  placeholder={isAr ? '2. رقم الهاتف (اختياري)...' : '2. N° de téléphone (Optionnel)...'}
                   value={inputPhone}
                   onChange={e => setInputPhone(e.target.value)}
                   style={{

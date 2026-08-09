@@ -549,11 +549,11 @@ export function maskPhone(phone?: string): string {
   return clean.slice(0, 4) + ' •• •• ' + clean.slice(-2);
 }
 
-export async function trackDeliveryPackage(code: string, phone: string): Promise<TrackingDeliveryResult | null> {
+export async function trackDeliveryPackage(code: string, phone?: string): Promise<TrackingDeliveryResult | null> {
   const cleanCode = (code || '').trim();
   const cleanPhone = (phone || '').replace(/\D/g, '');
 
-  if (!cleanCode || !cleanPhone) return null;
+  if (!cleanCode) return null;
 
   const upperInput = cleanCode.toUpperCase();
 
@@ -571,7 +571,7 @@ export async function trackDeliveryPackage(code: string, phone: string): Promise
         const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
 
         const codeMatch = docId === upperInput || storedId === upperInput || (upperInput.length >= 4 && (docId.includes(upperInput) || storedId.includes(upperInput))) || (trackingNum && trackingNum.includes(upperInput));
-        const phoneMatch = cleanPhone.length >= 6 && (rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone));
+        const phoneMatch = !cleanPhone || (cleanPhone.length >= 6 && (rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone)));
 
         return codeMatch && phoneMatch;
       });
@@ -742,11 +742,11 @@ const REPAIR_STATUS_MAP: Record<string, { fr: string; ar: string; color: string 
   cancelled:        { fr: 'Dossier annulé', ar: 'ملف ملغى', color: '#475569' },
 };
 
-export async function trackRepair(code: string, phone: string): Promise<TrackingRepairResult | null> {
+export async function trackRepair(code: string, phone?: string): Promise<TrackingRepairResult | null> {
   const cleanCode = (code || '').trim().toUpperCase();
   const cleanPhone = (phone || '').replace(/\D/g, '');
 
-  if (!cleanCode || !cleanPhone) return null;
+  if (!cleanCode) return null;
 
   try {
     const config = getConfig();
@@ -762,7 +762,7 @@ export async function trackRepair(code: string, phone: string): Promise<Tracking
         const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
 
         const codeMatch = docId === cleanCode || storedId === cleanCode || trackingCode === cleanCode || (cleanCode.length >= 4 && (docId.includes(cleanCode) || storedId.includes(cleanCode) || trackingCode.includes(cleanCode)));
-        const phoneMatch = cleanPhone.length >= 6 && (rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone));
+        const phoneMatch = !cleanPhone || (cleanPhone.length >= 6 && (rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone)));
 
         return codeMatch && phoneMatch;
       });
