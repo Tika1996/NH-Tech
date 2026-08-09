@@ -11,6 +11,8 @@ jdk*
 *.apk
 *.exe
 .vite
+.gradle
+APP/android/.gradle
 
 # Environment variables & secrets (CRITICAL - DO NOT PUSH)
 .env
