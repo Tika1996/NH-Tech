@@ -236,7 +236,7 @@ export default function HomePage() {
               {/* Top Quick Access Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '14px' }}>
                 <div className="nh-quick-card" onClick={() => setTrackingOpen(true)}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 87, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00F0FF' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'var(--bg-accent-dynamic)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-dynamic)' }}>
                     <Wrench size={20} />
                   </div>
                   <div>
@@ -246,7 +246,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="nh-quick-card" onClick={() => window.location.hash = '#/vente-pieces'}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 240, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00F0FF' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'var(--bg-accent-dynamic)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-dynamic)' }}>
                     <ShoppingBag size={20} />
                   </div>
                   <div>
@@ -311,12 +311,12 @@ export default function HomePage() {
               return (
                 <Link to={s.link} key={idx} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <div className="formation-card" style={{ padding: '24px', borderRadius: '18px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', transition: 'all 0.25s ease' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(0, 87, 255, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00F0FF', marginBottom: '16px' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-accent-dynamic)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-accent-dynamic)', marginBottom: '16px' }}>
                       <IconComp size={24} />
                     </div>
                     <h3 style={{ fontSize: '1.15rem', marginBottom: '8px' }}>{s.title}</h3>
                     <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '16px' }}>{s.desc}</p>
-                    <div style={{ color: '#00F0FF', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ color: 'var(--color-accent-dynamic)', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {isAr ? 'اكتشف' : 'Découvrir'} <ArrowRight size={14} />
                     </div>
                   </div>
@@ -396,7 +396,7 @@ export default function HomePage() {
         <div className="container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '36px' }}>
             <h2>{isAr ? 'المنتجات الأكثر طلباً' : 'Produits populaires'}</h2>
-            <Link to="/vente-laptops" style={{ color: '#00F0FF', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Link to="/vente-laptops" style={{ color: 'var(--color-accent-dynamic)', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {isAr ? 'عرض الكل' : 'Voir tout'} <ArrowRight size={16} />
             </Link>
           </div>
@@ -487,7 +487,7 @@ export default function HomePage() {
               <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>
                 {isAr ? 'أسئلة مكررة؟' : 'Questions fréquentes'}
               </h3>
-              <Link to="/contact" style={{ color: '#00F0FF', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <Link to="/contact" style={{ color: 'var(--color-accent-dynamic)', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                 {isAr ? 'عرض جميع الأسئلة ➔' : 'Voir toutes les questions ➔'}
               </Link>
             </div>
@@ -511,7 +511,7 @@ export default function HomePage() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
                       <span>{faq.q}</span>
-                      <span style={{ fontSize: '1.2rem', color: '#00F0FF' }}>{isOpen ? '−' : '+'}</span>
+                      <span style={{ fontSize: '1.2rem', color: 'var(--color-accent-dynamic)' }}>{isOpen ? '−' : '+'}</span>
                     </div>
                     {isOpen && (
                       <p style={{ marginTop: '12px', fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>

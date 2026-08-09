@@ -245,7 +245,7 @@ export default function VentePiecesPage() {
             </button>
 
             <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '0.78rem', background: '#00F0FF20', color: '#00F0FF', padding: '4px 12px', borderRadius: '12px', fontWeight: 800 }}>
+              <span style={{ fontSize: '0.78rem', background: 'var(--bg-accent-dynamic)', color: 'var(--color-accent-dynamic)', padding: '4px 12px', borderRadius: '12px', fontWeight: 800 }}>
                 {detailPiece.categoryLabel || detailPiece.category}
               </span>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '8px', margin: '8px 0 4px' }}>
@@ -277,7 +277,7 @@ export default function VentePiecesPage() {
             {/* Specs & Reference Description */}
             <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
               <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Cpu size={16} color="#00F0FF" />
+                <Cpu size={16} color="var(--color-accent-dynamic)" />
                 <span>{isAr ? 'المواصفات والتفاصيل:' : 'Détails & Spécifications :'}</span>
               </div>
               {detailPiece.ref && <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '6px' }}>Référence officielle: <strong>{detailPiece.ref}</strong></div>}

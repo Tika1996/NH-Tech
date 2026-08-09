@@ -15,6 +15,8 @@
   --color-text-main: #FFFFFF;
   --color-text-sub: #8E9AAF;
   --color-accent-cyan: #00F0FF;
+  --color-accent-dynamic: #0057FF;
+  --bg-accent-dynamic: rgba(0, 87, 255, 0.08);
 
   --bleu: #0057FF;
   --bleu-royal: #003599;
@@ -129,6 +131,8 @@
   --text-primary: #FFFFFF;
   --text-secondary: #8B9BB4;
   --text-on-surface: #CBD5E1;
+  --color-accent-dynamic: #00F0FF;
+  --bg-accent-dynamic: rgba(0, 240, 255, 0.15);
   --border-color: rgba(0, 240, 255, 0.14);
   --border-input: rgba(255, 255, 255, 0.12);
   --gris-clair: #0D1326;
@@ -2293,8 +2297,13 @@ p {
 [data-theme="light"] h1,
 [data-theme="light"] h2,
 [data-theme="light"] h3,
-[data-theme="light"] h4 {
+[data-theme="light"] h4:not(.footer-col h4):not(.footer h4) {
   color: #0F172A !important;
+}
+
+.footer-col h4,
+.footer h4 {
+  color: #FFFFFF !important;
 }
 
 [data-theme="light"] p,

@@ -275,7 +275,7 @@ export default function VenteLaptopsPage() {
             </button>
 
             <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '0.78rem', background: '#00F0FF20', color: '#00F0FF', padding: '4px 12px', borderRadius: '12px', fontWeight: 800 }}>
+              <span style={{ fontSize: '0.78rem', background: 'var(--bg-accent-dynamic)', color: 'var(--color-accent-dynamic)', padding: '4px 12px', borderRadius: '12px', fontWeight: 800 }}>
                 {conditionLabel(detailLaptop.condition)}
               </span>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '8px', margin: '8px 0 4px' }}>
@@ -302,14 +302,14 @@ export default function VenteLaptopsPage() {
             {/* Technical Specifications Grid */}
             <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
               <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Laptop size={16} color="#00F0FF" />
+                <Laptop size={16} color="var(--color-accent-dynamic)" />
                 <span>{isAr ? 'المواصفات التقنية:' : 'Spécifications Techniques :'}</span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.84rem' }}>
                 {detailLaptop.specs?.cpu && (
                   <div style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Cpu size={15} color="#00F0FF" />
+                    <Cpu size={15} color="var(--color-accent-dynamic)" />
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>CPU</div>
                       <div style={{ fontWeight: 800 }}>{detailLaptop.specs.cpu}</div>
@@ -318,7 +318,7 @@ export default function VenteLaptopsPage() {
                 )}
                 {detailLaptop.specs?.gpu && (
                   <div style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Monitor size={15} color="#00F0FF" />
+                    <Monitor size={15} color="var(--color-accent-dynamic)" />
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>GPU</div>
                       <div style={{ fontWeight: 800 }}>{detailLaptop.specs.gpu}</div>
@@ -327,7 +327,7 @@ export default function VenteLaptopsPage() {
                 )}
                 {detailLaptop.specs?.ram && (
                   <div style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <HardDrive size={15} color="#00F0FF" />
+                    <HardDrive size={15} color="var(--color-accent-dynamic)" />
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>RAM</div>
                       <div style={{ fontWeight: 800 }}>{detailLaptop.specs.ram}</div>
@@ -336,7 +336,7 @@ export default function VenteLaptopsPage() {
                 )}
                 {detailLaptop.specs?.ssd && (
                   <div style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <HardDrive size={15} color="#00F0FF" />
+                    <HardDrive size={15} color="var(--color-accent-dynamic)" />
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Stockage</div>
                       <div style={{ fontWeight: 800 }}>{detailLaptop.specs.ssd}</div>
@@ -345,7 +345,7 @@ export default function VenteLaptopsPage() {
                 )}
                 {detailLaptop.specs?.screen && (
                   <div style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Monitor size={15} color="#00F0FF" />
+                    <Monitor size={15} color="var(--color-accent-dynamic)" />
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Écran</div>
                       <div style={{ fontWeight: 800 }}>{detailLaptop.specs.screen}</div>
