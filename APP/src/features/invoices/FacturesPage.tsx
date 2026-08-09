@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import type { PosSaleTransaction } from '../../components/pos/PosCartModal';
 import { ReturnSaleModal } from '../../components/pos/ReturnSaleModal';
+import { usePermissions } from '../../hooks/usePermissions';
 
 import { getAll, set } from '../../lib/firebaseOps';
 
@@ -33,6 +34,13 @@ const INITIAL_INVOICES: PosSaleTransaction[] = [];
 
 export function FacturesPage() {
   const { language } = useAppStore();
+  const { can } = usePermissions();
+  const canCreate = can('factures', 'create');
+  const canEdit = can('factures', 'edit');
+  const canDelete = can('factures', 'delete');
+  const canExport = can('factures', 'export');
+  const canViewFinancials = can('factures', 'financials');
+
   const isAr = language === 'ar';
   const isEn = language === 'en';
   const t = (fr: string, ar: string, en: string) => isAr ? ar : isEn ? en : fr;
@@ -186,11 +194,15 @@ export function FacturesPage() {
 
         // Also update corresponding web order in 'orders' collection if applicable
         try {
+          const targetOrderId = originalTx?.orderId || transactionId;
           const allOrders = await getAll<any>('orders');
           const webOrder = allOrders.find((o: any) =>
+            o.id === targetOrderId ||
             o.id === transactionId ||
+            `FAC-WEB-${(o.id || '').replace(/^CMD-WEB-?/i, '')}` === transactionId ||
             `FACT-${(o.id || '').replace(/[^A-Za-z0-9]/g, '')}` === transactionId ||
-            transactionId.includes(o.id || '')
+            transactionId.includes(o.id || '') ||
+            (originalTx && o.customerName === originalTx.customerName && Math.abs((o.totalAmount || 0) - (originalTx.totalPrice || 0)) < 1)
           );
           if (webOrder) {
             await set<any>('orders', webOrder.id, { ...webOrder, status: 'returned', isRefunded: true });
@@ -318,8 +330,8 @@ export function FacturesPage() {
       inv.customerName || '',
       inv.customerPhone || '',
       inv.channel === 'website' ? 'Web' : 'Magasin',
-      inv.totalAmount,
-      inv.globalDiscountDZD || 0,
+      (inv as any).totalAmount || inv.totalPrice,
+      (inv as any).globalDiscountDZD || inv.totalDiscount || 0,
       inv.netProfit || 0,
       inv.paymentMethod,
       inv.status || 'Payée'
@@ -354,10 +366,12 @@ export function FacturesPage() {
           </p>
         </div>
 
-        <button className="btn-excel-export" type="button" onClick={handleExportExcel}>
-          <FileSpreadsheet size={18} />
-          <span>{t('Exporter Excel', 'تصدير Excel', 'Export Excel')}</span>
-        </button>
+        {canExport && (
+          <button className="btn-excel-export" type="button" onClick={handleExportExcel}>
+            <FileSpreadsheet size={18} />
+            <span>{t('Exporter Excel', 'تصدير Excel', 'Export Excel')}</span>
+          </button>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -375,7 +389,7 @@ export function FacturesPage() {
           <div className="kpi-icon green"><CheckCircle2 size={22} color="#ffffff" /></div>
           <div className="kpi-info">
             <span className="kpi-label">{t("Chiffre d'Affaires", 'إجمالي المبيعات', 'Total Revenue')}</span>
-            <h3 className="kpi-value">{stats.totalRevenue.toLocaleString()} DZD</h3>
+            <h3 className="kpi-value">{canViewFinancials ? `${stats.totalRevenue.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-sub">{stats.paidCount} {t('factures payées', 'فواتير مدفوعة', 'paid invoices')}</span>
           </div>
         </div>
@@ -384,7 +398,7 @@ export function FacturesPage() {
           <div className="kpi-icon emerald"><TrendingUp size={22} color="#ffffff" /></div>
           <div className="kpi-info">
             <span className="kpi-label">{t('Bénéfice Net Global', 'إجمالي الأرباح الصافية', 'Total Net Profit')}</span>
-            <h3 className="kpi-value profit-text">+{stats.totalNetProfit.toLocaleString()} DZD</h3>
+            <h3 className="kpi-value profit-text">{canViewFinancials ? `+${stats.totalNetProfit.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-sub profit-text">{t('Marge réelle calculée', 'الأرباح الصافية المحققة', 'Net profit earned')}</span>
           </div>
         </div>
@@ -482,7 +496,7 @@ export function FacturesPage() {
                       <div className="inv-customer-cell">
                         <span className="customer-name">{inv.customerName}</span>
                         <span className="customer-sub">
-                          {inv.customerPhone} • {inv.customerType === 'professionnel' ? t('Professionnel', 'مهني', 'Business') : t('Particulier', 'فردي', 'Individual')}
+                          {inv.customerPhone} • {((inv.customerType as string) === 'professionnel' || inv.customerType === 'entreprise' || inv.customerType === 'revendeur') ? t('Professionnel', 'مهني', 'Business') : t('Particulier', 'فردي', 'Individual')}
                         </span>
                       </div>
                     </td>
@@ -501,14 +515,14 @@ export function FacturesPage() {
 
                     {/* Total Price */}
                     <td>
-                      <span className="total-price-text">{inv.totalPrice.toLocaleString()} DZD</span>
+                      <span className="total-price-text">{canViewFinancials ? `${inv.totalPrice.toLocaleString()} DZD` : '**** DZD'}</span>
                     </td>
 
                     {/* Net Profit */}
                     <td>
                       <span className="profit-badge-cell">
                         <TrendingUp size={12} />
-                        <span>+{inv.netProfit.toLocaleString()} DZD</span>
+                        <span>{canViewFinancials ? `+${inv.netProfit.toLocaleString()} DZD` : '**** DZD'}</span>
                       </span>
                     </td>
 
@@ -539,7 +553,7 @@ export function FacturesPage() {
                     {/* Actions */}
                     <td>
                       <div className="action-buttons-cell">
-                        {inv.status === 'Payée' && (
+                        {canEdit && inv.status === 'Payée' && (
                           <button
                             type="button"
                             className="dots-icon-btn edit-btn"
@@ -549,7 +563,7 @@ export function FacturesPage() {
                             <Edit2 size={15} />
                           </button>
                         )}
-                        {inv.status === 'Payée' && (
+                        {canDelete && inv.status === 'Payée' && (
                           <button
                             type="button"
                             className="btn-return-action"

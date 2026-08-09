@@ -1,6 +1,6 @@
 {
-	"appId": "com.qalbi.itmaan.gestion",
-	"appName": "Qalbi ITMAAN Gestion",
+	"appId": "com.nhtech.gestion",
+	"appName": "NH TECH Manager",
 	"webDir": "dist",
 	"bundledWebRuntime": false
 }

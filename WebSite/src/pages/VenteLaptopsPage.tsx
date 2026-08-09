@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
 import { getPublishedLaptops, submitWebOrder, type WebsiteLaptop } from '../lib/firebase';
+import { formatImageUrl } from '../lib/imageUtils';
 import { useCart } from '../lib/CartContext';
 import {
   Laptop, Search, Loader2, Cpu, HardDrive, Monitor,
@@ -193,7 +194,7 @@ export default function VenteLaptopsPage() {
                   <div className="formation-card" key={laptop.id}>
                     <Link to={`/laptop/${laptop.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <div className="formation-card-image">
-                        <img src={laptop.image || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'} alt={name} />
+                        <img src={formatImageUrl(laptop.image) || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'} alt={name} />
                         <span className="formation-badge-populaire">{conditionLabel(laptop.condition)}</span>
                       </div>
                     </Link>
@@ -269,7 +270,7 @@ export default function VenteLaptopsPage() {
       {detailLaptop && (
         <div className="modal-backdrop-web" onClick={() => setDetailLaptop(null)} style={{ zIndex: 9999 }}>
           <div className="modal-content-web" onClick={e => e.stopPropagation()} style={{ maxWidth: '640px', padding: '24px' }}>
-            <button className="modal-close-btn" onClick={() => setDetailLaptop(null)} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', border: 'none' }}>
+            <button className="modal-close-btn" onClick={() => setDetailLaptop(null)} style={{ background: 'var(--bg-tertiary)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
               <X size={18} />
             </button>
 
@@ -481,7 +482,7 @@ export default function VenteLaptopsPage() {
         .modal-field label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
         .modal-field input, .modal-field textarea {
           padding: 10px 14px; border-radius: 10px; font-size: 0.9rem;
-          border: 1.5px solid var(--border, #e2e8f0); background: var(--bg-page, #f8fafc);
+          border: 1.5px solid var(--border-input, #cbd5e1); background: var(--bg-tertiary, #f8fafc); color: var(--text-primary);
           transition: border-color 0.2s;
         }
         .modal-field input:focus, .modal-field textarea:focus { border-color: var(--bleu); outline: none; }

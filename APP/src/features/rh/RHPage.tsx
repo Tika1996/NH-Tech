@@ -31,6 +31,13 @@ import {
 } from 'lucide-react';
 import { CreateAccountModal } from './CreateAccountModal';
 import { TasksTab } from './TasksTab';
+import { UserPermissionsModal } from './UserPermissionsModal';
+import { RolePermissionsModal } from './RolePermissionsModal';
+import { subscribeRoles, deleteRole, getRoles } from '../../lib/rolesStore';
+import type { CustomRole, ModuleKey } from '../../types/permissions';
+import { MODULE_LABELS } from '../../types/permissions';
+import { Shield, Key } from 'lucide-react';
+import { usePermissions } from '../../hooks/usePermissions';
 
 // --- Types ---
 
@@ -250,16 +257,16 @@ export function RHPage() {
     const userRole = currentUser?.role || 'admin';
     const hasFullAccess = !currentUser || userRole === 'admin' || userRole === 'manager' || userRole === 'secretariat';
 
-    const initialTabFromUrl = searchParams.get('tab') as 'staff' | 'attendance' | 'leaves' | 'tasks' | null;
+    const initialTabFromUrl = searchParams.get('tab') as 'staff' | 'leaves' | 'tasks' | 'roles' | null;
     const defaultTab = hasFullAccess ? 'staff' : 'tasks';
 
     const isTabAllowed = (tab: string | null) => {
         if (!tab) return false;
         if (!hasFullAccess && tab !== 'tasks') return false;
-        return ['staff', 'attendance', 'leaves', 'tasks'].includes(tab);
+        return ['staff', 'leaves', 'tasks', 'roles'].includes(tab);
     };
 
-    const [activeTab, setActiveTab] = useState<'staff' | 'attendance' | 'leaves' | 'tasks'>(
+    const [activeTab, setActiveTab] = useState<'staff' | 'leaves' | 'tasks' | 'roles'>(
         isTabAllowed(initialTabFromUrl) ? initialTabFromUrl! : defaultTab
     );
 
@@ -274,7 +281,7 @@ export function RHPage() {
         }
     }, [currentUser]);
 
-    const handleTabChange = (tab: 'staff' | 'attendance' | 'leaves' | 'tasks') => {
+    const handleTabChange = (tab: 'staff' | 'leaves' | 'tasks' | 'roles') => {
         setActiveTab(tab);
         setSearchParams({ tab });
     };
@@ -285,7 +292,7 @@ export function RHPage() {
             <div className="page-header-row">
                 <div>
                     <h1 className="page-title"><Users size={28} className="title-icon" /> {t.title}</h1>
-                    <p className="page-subtitle">{language === 'fr' ? 'Gérez les membres du personnel, les rôles, les accès et le pointage.' : 'إدارة فريق العمل، الصلاحيات، الحضور والغياب'}</p>
+                    <p className="page-subtitle">{language === 'fr' ? 'Gérez les membres du personnel, les rôles et les accès.' : 'إدارة فريق العمل، الصلاحيات والمهام'}</p>
                 </div>
             </div>
 
@@ -301,14 +308,16 @@ export function RHPage() {
                         <span>{t.tabs.staff}</span>
                     </button>
                 )}
-                <button
-                    type="button"
-                    className={`main-nav-tab ${activeTab === 'attendance' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('attendance')}
-                >
-                    <Clock size={18} />
-                    <span>{t.tabs.attendance}</span>
-                </button>
+                {hasFullAccess && (
+                    <button
+                        type="button"
+                        className={`main-nav-tab ${activeTab === 'roles' ? 'active' : ''}`}
+                        onClick={() => handleTabChange('roles')}
+                    >
+                        <Shield size={18} />
+                        <span>{language === 'fr' ? 'Rôles & Accès' : 'الوظائف والصلاحيات'}</span>
+                    </button>
+                )}
                 <button
                     type="button"
                     className={`main-nav-tab ${activeTab === 'leaves' ? 'active' : ''}`}
@@ -329,9 +338,9 @@ export function RHPage() {
 
             <div className="tab-content">
                 {hasFullAccess && activeTab === 'staff' && <StaffTab language={language} currentUser={currentUser} />}
-                {activeTab === 'attendance' && <AttendanceTab language={language} currentUser={currentUser} />}
-                {activeTab === 'leaves' && <LeavesTab language={language} currentUser={currentUser} />}
-                {activeTab === 'tasks' && <TasksTab language={language} currentUser={currentUser} />}
+                {hasFullAccess && activeTab === 'roles' && <RolesTab language={language} currentUser={currentUser} />}
+                {activeTab === 'leaves' && <LeavesTab language={(language === 'ar' ? 'ar' : 'fr')} currentUser={currentUser} />}
+                {activeTab === 'tasks' && <TasksTab language={(language === 'ar' ? 'ar' : 'fr')} currentUser={currentUser} />}
             </div>
 
             <style>{`
@@ -395,9 +404,15 @@ export function RHPage() {
 // STAFF TAB
 // ═══════════════════════════════════
 
-function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUser: any }) {
+function StaffTab({ language, currentUser }: { language: string, currentUser: any }) {
     const t = translations[language as keyof typeof translations] || translations.fr;
     const { showToast } = useToast();
+    const { can } = usePermissions();
+    const canCreate = can('rh', 'create');
+    const canEdit = can('rh', 'edit');
+    const canDelete = can('rh', 'delete');
+    const canExport = can('rh', 'export');
+    const canViewFinancials = can('rh', 'financials');
 
     const isManager = currentUser?.role === 'manager';
     const hasFullAccess = currentUser?.role === 'admin' || currentUser?.role === 'manager';
@@ -409,6 +424,13 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [showCreateAccount, setShowCreateAccount] = useState(false);
+    const [selectedStaffForPerms, setSelectedStaffForPerms] = useState<Staff | null>(null);
+    const [showPermsModal, setShowPermsModal] = useState(false);
+
+    const openPermissionsModal = (member: Staff) => {
+        setSelectedStaffForPerms(member);
+        setShowPermsModal(true);
+    };
 
     const [formData, setFormData] = useState({
         name: '', email: '', phone: '', role: 'staff' as Staff['role'], commissionRate: 0, isActive: true
@@ -426,7 +448,14 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
         }
     }, []);
 
+    const [dynamicRoles, setDynamicRoles] = useState<CustomRole[]>(() => getRoles());
+
     useEffect(() => { loadStaff(); }, [loadStaff]);
+
+    useEffect(() => {
+        const unsub = subscribeRoles((updated) => setDynamicRoles(updated));
+        return () => unsub();
+    }, []);
 
     // Role filter state
     const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
@@ -731,29 +760,27 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
 
                 <div className="filters-group">
                     <select value={selectedRoleFilter} onChange={e => setSelectedRoleFilter(e.target.value)}>
-                        <option value="all">Tous les rôles ({staff.length})</option>
-                        {roles.map(r => (
-                            <option key={r.id} value={r.id}>
-                                {r.label[language]} ({staff.filter(s => s.role === r.id).length})
-                            </option>
-                        ))}
+                        <option value="all">{language === 'ar' ? `جميع الوظائف (${staff.length})` : `Tous les rôles (${staff.length})`}</option>
+                        {dynamicRoles.map(r => {
+                            const count = staff.filter(s => s.role === r.id).length;
+                            const roleLabel = r.name[language === 'ar' ? 'ar' : 'fr'] || r.name.fr;
+                            return (
+                                <option key={r.id} value={r.id}>
+                                    {roleLabel} ({count})
+                                </option>
+                            );
+                        })}
                     </select>
 
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>
                         <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: '#0055ff' }} />
-                        <span>Afficher inactifs</span>
+                        <span>{language === 'ar' ? 'عرض غير النشطين' : 'Afficher inactifs'}</span>
                     </label>
 
-                    {hasFullAccess && (
+                    {hasFullAccess && canCreate && (
                         <button className="btn-excel-export" type="button" onClick={() => setShowCreateAccount(true)}>
                             <UserCog size={16} />
-                            <span>Créer un compte</span>
-                        </button>
-                    )}
-                    {hasFullAccess && (
-                        <button className="btn-primary-action" type="button" onClick={() => openModal()}>
-                            <Plus size={16} />
-                            <span>Ajouter</span>
+                            <span>{language === 'ar' ? 'إنشاء حساب جديد' : 'Créer un compte'}</span>
                         </button>
                     )}
                 </div>
@@ -783,21 +810,11 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
                             </tr>
                         ) : (
                             filteredStaff.map((s, idx) => {
-                                const roleColors: Record<string, { bg: string; text: string; border: string }> = {
-                                    admin: { bg: 'rgba(239, 68, 68, 0.15)', text: '#EF4444', border: 'rgba(239, 68, 68, 0.3)' },
-                                    manager: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.3)' },
-                                    secretariat: { bg: 'rgba(245, 158, 11, 0.15)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.3)' },
-                                    professeur: { bg: 'rgba(0, 240, 255, 0.15)', text: '#00F0FF', border: 'rgba(0, 240, 255, 0.3)' },
-                                    staff: { bg: 'rgba(168, 85, 247, 0.15)', text: '#A855F7', border: 'rgba(168, 85, 247, 0.3)' },
-                                };
-                                const roleStyle = roleColors[s.role] || roleColors.staff;
-                                const roleLabelMap: Record<string, string> = {
-                                    admin: 'Administrateur',
-                                    manager: 'Manager',
-                                    secretariat: 'Secrétariat',
-                                    professeur: 'Technicien',
-                                    staff: 'Employé',
-                                };
+                                const roleObj = dynamicRoles.find(r => r.id === s.role);
+                                const roleName = roleObj 
+                                    ? (roleObj.name[language === 'ar' ? 'ar' : 'fr'] || roleObj.name.fr) 
+                                    : (s.role === 'admin' ? 'Administrateur' : s.role === 'manager' ? 'Manager' : s.role);
+                                const badgeColor = roleObj?.color || (s.role === 'admin' ? '#EF4444' : s.role === 'manager' ? '#3B82F6' : '#10B981');
 
                                 return (
                                     <tr key={s.id} style={{ borderBottom: '1px solid var(--border-secondary)', transition: 'background 0.15s ease' }}>
@@ -839,13 +856,13 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
                                                     borderRadius: '16px',
                                                     fontSize: '0.8rem',
                                                     fontWeight: 800,
-                                                    background: roleStyle.bg,
-                                                    color: roleStyle.text,
-                                                    border: `1px solid ${roleStyle.border}`,
+                                                    background: badgeColor + '20',
+                                                    color: badgeColor,
+                                                    border: `1px solid ${badgeColor}50`,
                                                     display: 'inline-block',
                                                 }}
                                             >
-                                                {roleLabelMap[s.role] || s.role}
+                                                {roleName}
                                             </span>
                                         </td>
 
@@ -884,20 +901,32 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                     <button
                                                         className="icon-btn"
-                                                        onClick={() => openModal(s)}
-                                                        title={t.staff.edit}
-                                                        style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+                                                        onClick={() => openPermissionsModal(s)}
+                                                        title={language === 'fr' ? 'Gérer les accès de cet employé' : 'إدارة صلاحيات وصول هذا الموظف'}
+                                                        style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(0, 240, 255, 0.1)', color: '#00F0FF', border: '1px solid rgba(0, 240, 255, 0.2)' }}
                                                     >
-                                                        <Edit2 size={16} />
+                                                        <Key size={16} />
                                                     </button>
-                                                    <button
-                                                        className="icon-btn danger"
-                                                        onClick={() => handleDelete(s.id)}
-                                                        title={t.common.delete}
-                                                        style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    {canEdit && (
+                                                        <button
+                                                            className="icon-btn"
+                                                            onClick={() => openModal(s)}
+                                                            title={t.staff.edit}
+                                                            style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+                                                        >
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button
+                                                            className="icon-btn danger"
+                                                            onClick={() => handleDelete(s.id)}
+                                                            title={t.common.delete}
+                                                            style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         )}
@@ -1071,7 +1100,7 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
                                 <div className="input-group">
                                     <label className="input-label">{t.staff.role}</label>
                                     <select className="input" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value as any })} style={{ borderRadius: '10px', height: '40px' }}>
-                                        {roles.map(r => <option key={r.id} value={r.id}>{r.label[language]}</option>)}
+                                        {roles.map(r => <option key={r.id} value={r.id}>{r.label[language as 'fr' | 'ar'] || r.label.fr}</option>)}
                                     </select>
                                 </div>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginTop: '4px', fontWeight: 600 }}>
@@ -1094,6 +1123,14 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
                 onSuccess={() => { loadStaff(); setShowCreateAccount(false); }}
             />
 
+            {showPermsModal && selectedStaffForPerms && (
+                <UserPermissionsModal
+                    isOpen={showPermsModal}
+                    onClose={() => setShowPermsModal(false)}
+                    staffMember={selectedStaffForPerms}
+                />
+            )}
+
             <style>{`
                 .filters-bar { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; justify-content: space-between; }
                 .search-box { position: relative; flex: 1; min-width: 200px; max-width: 400px; }
@@ -1109,6 +1146,338 @@ function StaffTab({ language, currentUser }: { language: 'fr' | 'ar', currentUse
                 .spinner { animation: spin 1s linear infinite; color: var(--color-brand); }
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             `}</style>
+        </div>
+    );
+}
+
+// ═══════════════════════════════════
+// ROLES TAB (ROLES & ACCÈS)
+// ═══════════════════════════════════
+
+function RolesTab({ language, currentUser }: { language: string, currentUser: any }) {
+    const { showToast } = useToast();
+    const isAr = language === 'ar';
+    const isAdmin = currentUser?.role === 'admin';
+
+    const [rolesList, setRolesList] = useState<CustomRole[]>([]);
+    const [selectedRoleForEdit, setSelectedRoleForEdit] = useState<CustomRole | null>(null);
+    const [showRoleModal, setShowRoleModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterType, setFilterType] = useState<'all' | 'system' | 'custom'>('all');
+
+    useEffect(() => {
+        const unsub = subscribeRoles((updatedRoles) => {
+            setRolesList(updatedRoles);
+        });
+        return unsub;
+    }, []);
+
+    const handleOpenCreateRole = () => {
+        setSelectedRoleForEdit(null);
+        setShowRoleModal(true);
+    };
+
+    const handleOpenEditRole = (role: CustomRole) => {
+        setSelectedRoleForEdit(role);
+        setShowRoleModal(true);
+    };
+
+    const handleDeleteRole = async (role: CustomRole) => {
+        if (role.isSystem || role.id === 'admin') {
+            showToast(isAr ? 'لا يمكن حذف وظيفة المسؤول الرئيسي' : 'Impossible de supprimer le rôle Administrateur système', 'error');
+            return;
+        }
+        if (confirm(isAr ? `هل أنت متأكد من حذف الوظيفة "${role.name[isAr ? 'ar' : 'fr']}"؟` : `Êtes-vous sûr de vouloir supprimer le rôle "${role.name.fr}" ?`)) {
+            const success = await deleteRole(role.id);
+            if (success) {
+                showToast(isAr ? 'تم حذف الوظيفة بنجاح' : 'Modèle de rôle supprimé', 'success');
+            } else {
+                showToast(isAr ? 'خطأ أثناء الحذف' : 'Erreur lors de la suppression', 'error');
+            }
+        }
+    };
+
+    const filteredRoles = rolesList.filter(role => {
+        const name = (role.name[isAr ? 'ar' : 'fr'] || role.name.fr || '').toLowerCase();
+        const desc = (role.description || '').toLowerCase();
+        const q = searchQuery.toLowerCase();
+        const matchesQuery = name.includes(q) || desc.includes(q);
+
+        if (filterType === 'system') return matchesQuery && role.isSystem;
+        if (filterType === 'custom') return matchesQuery && !role.isSystem;
+        return matchesQuery;
+    });
+
+    const systemCount = rolesList.filter(r => r.isSystem).length;
+    const customCount = rolesList.filter(r => !r.isSystem).length;
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                    <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+                        {isAr ? 'نماذج الوظائف والصلاحيات' : 'Rôles & Modèles d\'Accès'}
+                    </h2>
+                    <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                        {isAr ? 'أنشئ أدواراً مخصصة (مثل تقني صيانة، عامل مبيعات...) وحدد الصلاحيات لكل دور' : 'Créez des rôles personnalisés et définissez leurs permissions d\'accès au système.'}
+                    </p>
+                </div>
+
+                {isAdmin && (
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleOpenCreateRole}
+                        style={{
+                            padding: '10px 20px',
+                            borderRadius: '12px',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        <Plus size={18} />
+                        <span>{isAr ? 'إضافة دور جديد' : 'Nouveau Rôle'}</span>
+                    </button>
+                )}
+            </div>
+
+            {/* KPI Summary Cards Grid (Matching FacturesPage / StaffTab) */}
+            <div className="kpi-grid">
+                {/* Card 1: Total Rôles */}
+                <div className="kpi-card">
+                    <div className="kpi-icon blue"><Shield size={22} color="#ffffff" /></div>
+                    <div className="kpi-info">
+                        <span className="kpi-label">{isAr ? 'إجمالي الأدوار' : 'TOTAL RÔLES'}</span>
+                        <h3 className="kpi-value">{rolesList.length}</h3>
+                        <span className="kpi-sub">{isAr ? 'نماذج معرفة في النظام' : 'Modèles configurés'}</span>
+                    </div>
+                </div>
+
+                {/* Card 2: Rôles Système */}
+                <div className="kpi-card">
+                    <div className="kpi-icon" style={{ background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)', color: '#ffffff', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}><UserCog size={22} color="#ffffff" /></div>
+                    <div className="kpi-info">
+                        <span className="kpi-label">{isAr ? 'أدوار النظام' : 'RÔLES SYSTÈME'}</span>
+                        <h3 className="kpi-value">{systemCount}</h3>
+                        <span className="kpi-sub">{isAr ? 'أدوار افتراضية أساسية' : 'Rôles natifs ERP'}</span>
+                    </div>
+                </div>
+
+                {/* Card 3: Rôles Personnalisés */}
+                <div className="kpi-card">
+                    <div className="kpi-icon green"><CheckCircle size={22} color="#ffffff" /></div>
+                    <div className="kpi-info">
+                        <span className="kpi-label">{isAr ? 'أدوار مخصصة' : 'RÔLES SUR-MESURE'}</span>
+                        <h3 className="kpi-value">{customCount}</h3>
+                        <span className="kpi-sub">{isAr ? 'مصممة بواسطة المدير' : 'Créés par l\'admin'}</span>
+                    </div>
+                </div>
+
+                {/* Card 4: Modules Contrôlés */}
+                <div className="kpi-card">
+                    <div className="kpi-icon emerald"><Activity size={22} color="#ffffff" /></div>
+                    <div className="kpi-info">
+                        <span className="kpi-label">{isAr ? 'الوحدات المحمية' : 'MODULES ERP'}</span>
+                        <h3 className="kpi-value">9</h3>
+                        <span className="kpi-sub">{isAr ? 'صفحات تحت إدارة الصلاحيات' : 'Pages sous contrôle RBAC'}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Toolbar & Filters Bar */}
+            <div className="toolbar-card" style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div className="search-box" style={{ flex: 1, minWidth: '220px', maxWidth: '400px' }}>
+                    <Search size={16} />
+                    <input
+                        type="text"
+                        className="input search-input"
+                        placeholder={isAr ? 'بحث عن دور...' : 'Rechercher un rôle...'}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{ borderRadius: '12px' }}
+                    />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <select
+                        className="input"
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value as any)}
+                        style={{ borderRadius: '12px', height: '40px', padding: '0 14px', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                        <option value="all">{isAr ? 'جميع الأنواع' : 'Tous les types'}</option>
+                        <option value="system">{isAr ? 'أدوار النظام فقط' : 'Rôles Système'}</option>
+                        <option value="custom">{isAr ? 'الأدوار المخصصة' : 'Rôles Sur-mesure'}</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Grid of Roles */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+                {filteredRoles.map((role) => {
+                    const roleName = role.name[isAr ? 'ar' : 'fr'] || role.name.fr;
+                    const allowedModules = (Object.keys(MODULE_LABELS) as ModuleKey[]).filter(
+                        k => role.permissions?.[k]?.view
+                    );
+
+                    return (
+                        <div
+                            key={role.id}
+                            style={{
+                                background: 'var(--bg-elevated)',
+                                border: '1px solid var(--border-primary)',
+                                borderRadius: '20px',
+                                padding: '24px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                gap: '20px',
+                                transition: 'all 0.2s ease',
+                                boxShadow: 'var(--shadow-sm)',
+                                position: 'relative'
+                            }}
+                        >
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div
+                                            style={{
+                                                width: '38px',
+                                                height: '38px',
+                                                borderRadius: '12px',
+                                                background: role.color || '#3B82F6',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#FFFFFF',
+                                                boxShadow: `0 4px 14px ${role.color || '#3B82F6'}40`,
+                                                fontWeight: 800,
+                                                fontSize: '1rem',
+                                                flexShrink: 0
+                                            }}
+                                        >
+                                            {roleName.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontSize: '1.08rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                                                {roleName}
+                                            </h3>
+                                            <span style={{ fontSize: '0.76rem', color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                                                ID: {role.id}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {role.isSystem ? (
+                                        <span style={{
+                                            fontSize: '0.72rem',
+                                            fontWeight: 800,
+                                            padding: '4px 12px',
+                                            borderRadius: '12px',
+                                            background: 'rgba(239, 68, 68, 0.1)',
+                                            color: '#EF4444',
+                                            border: '1px solid rgba(239, 68, 68, 0.2)'
+                                        }}>
+                                            Système
+                                        </span>
+                                    ) : (
+                                        <span style={{
+                                            fontSize: '0.72rem',
+                                            fontWeight: 800,
+                                            padding: '4px 12px',
+                                            borderRadius: '12px',
+                                            background: 'rgba(16, 185, 129, 0.1)',
+                                            color: '#10B981',
+                                            border: '1px solid rgba(16, 185, 129, 0.2)'
+                                        }}>
+                                            Sur-mesure
+                                        </span>
+                                    )}
+                                </div>
+
+                                {role.description && (
+                                    <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                                        {role.description}
+                                    </p>
+                                )}
+
+                                {/* Allowed Modules Badges */}
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                            {isAr ? `الصفحات المتاحة (${allowedModules.length})` : `MODULES AUTORISÉS (${allowedModules.length})`}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        {allowedModules.length > 0 ? (
+                                            allowedModules.map(mKey => (
+                                                <span
+                                                    key={mKey}
+                                                    style={{
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 700,
+                                                        padding: '5px 12px',
+                                                        borderRadius: '10px',
+                                                        background: 'var(--bg-tertiary)',
+                                                        color: 'var(--text-primary)',
+                                                        border: '1px solid var(--border-secondary)',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '5px'
+                                                    }}
+                                                >
+                                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: role.color || '#3B82F6' }} />
+                                                    {MODULE_LABELS[mKey][isAr ? 'ar' : 'fr']}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
+                                                {isAr ? 'لا توجد صلاحيات مفعالة' : 'Aucun accès configuré'}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions Footer */}
+                            {isAdmin && (
+                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '16px', borderTop: '1px solid var(--border-secondary)' }}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={() => handleOpenEditRole(role)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '10px', fontSize: '0.82rem', height: '36px', padding: '0 14px', fontWeight: 700 }}
+                                    >
+                                        <Edit2 size={14} />
+                                        <span>{isAr ? 'تعديل الصلاحيات' : 'Configurer les accès'}</span>
+                                    </button>
+                                    {!role.isSystem && role.id !== 'admin' && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            onClick={() => handleDeleteRole(role)}
+                                            style={{ color: '#EF4444', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '10px', fontSize: '0.82rem', height: '36px', padding: '0 12px', fontWeight: 700 }}
+                                        >
+                                            <Trash2 size={14} />
+                                            <span>{isAr ? 'حذف' : 'Supprimer'}</span>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Role Permissions Modal */}
+            <RolePermissionsModal
+                isOpen={showRoleModal}
+                onClose={() => setShowRoleModal(false)}
+                roleToEdit={selectedRoleForEdit}
+            />
         </div>
     );
 }

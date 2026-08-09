@@ -298,12 +298,12 @@ export async function getPublishedLaptops(): Promise<WebsiteLaptop[]> {
       const results = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as WebsiteLaptop))
         .filter(l => l.publishedOnWebsite !== false && (l.stock ?? 0) > 0);
-      if (results.length > 0) return results;
+      return results;
     }
   } catch (error) {
     console.warn('[WEBSITE] Error fetching laptops from Firebase:', error);
   }
-  return DEMO_LAPTOPS;
+  return [];
 }
 
 // ============================================================
@@ -335,12 +335,12 @@ export async function getPublishedPieces(): Promise<WebsitePiece[]> {
       const results = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as WebsitePiece))
         .filter(p => p.publishedOnWebsite !== false && (p.stock ?? 0) > 0);
-      if (results.length > 0) return results;
+      return results;
     }
   } catch (error) {
     console.warn('[WEBSITE] Error fetching pieces from Firebase:', error);
   }
-  return DEMO_PIECES;
+  return [];
 }
 
 // ============================================================

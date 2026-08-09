@@ -33,6 +33,8 @@ import type { WebOrder } from '../orders/CommandesPage';
 import type { LaptopItem } from '../laptops/VenteLaptopsPage';
 import type { PieceStockItem } from '../catalog/VentePiecesPage';
 import type { Customer } from '../../lib/customersStore';
+import { usePermissions } from '../../hooks/usePermissions';
+import { Lock } from 'lucide-react';
 
 type PeriodFilter = 'today' | '7days' | 'month' | 'year' | 'all';
 
@@ -51,6 +53,8 @@ interface CombinedTransaction {
 export function Dashboard() {
   const navigate = useNavigate();
   const { language } = useAppStore();
+  const { can, canViewSubItem } = usePermissions();
+  const canViewFinancials = can('dashboard', 'financials');
   const isAr = language === 'ar';
   const isEn = language === 'en';
   const t = (fr: string, ar: string, en: string) => isAr ? ar : isEn ? en : fr;
@@ -150,7 +154,7 @@ export function Dashboard() {
 
   // 2. Valid Web Orders (Exclude cancelled, returned, or refunded orders)
   const validOrders = useMemo(() => {
-    return orders.filter(o => (o.status === 'confirmed' || o.status === 'shipping' || o.status === 'delivered') && o.status !== 'cancelled' && o.status !== 'returned' && !o.isRefunded && isDateInPeriod(o.dateStr));
+    return orders.filter(o => (o.status === 'confirmed' || o.status === 'shipping' || o.status === 'delivered') && (o.status as string) !== 'cancelled' && (o.status as string) !== 'returned' && !o.isRefunded && isDateInPeriod(o.dateStr));
   }, [orders, isDateInPeriod]);
 
   // Financial Summary
@@ -209,7 +213,7 @@ export function Dashboard() {
         dateStr: inv.dateStr,
         status: inv.status,
         itemCount: (inv.items || []).length,
-        rawDate: new Date(inv.createdAt?.toDate ? inv.createdAt.toDate() : (inv.dateStr || Date.now()))
+        rawDate: new Date((inv as any).createdAt?.toDate ? (inv as any).createdAt.toDate() : (inv.dateStr || Date.now()))
       });
     });
 
@@ -248,7 +252,7 @@ export function Dashboard() {
       const dayStoreProfit = dayInv.reduce((sum, inv) => sum + (inv.netProfit || 0), 0);
 
       // Calculate web sales for this day (Valid web orders only, exclude returned/cancelled)
-      const dayOrd = orders.filter(ord => ord.dateStr === dateKey && (ord.status === 'confirmed' || ord.status === 'shipping' || ord.status === 'delivered') && ord.status !== 'cancelled' && ord.status !== 'returned' && !ord.isRefunded);
+      const dayOrd = orders.filter(ord => ord.dateStr === dateKey && (ord.status === 'confirmed' || ord.status === 'shipping' || ord.status === 'delivered') && (ord.status as string) !== 'cancelled' && (ord.status as string) !== 'returned' && !ord.isRefunded);
       const dayWebRev = dayOrd.reduce((sum, ord) => sum + (ord.totalAmount || 0), 0);
       const dayWebProfit = dayOrd.reduce((sum, ord) => {
         const cost = (ord.items || []).reduce((c, item) => c + ((item.purchaseUnitPrice || (item.unitPrice * 0.75)) * (item.quantity || 1)), 0);
@@ -338,347 +342,409 @@ export function Dashboard() {
       {/* Main KPI Cards (5 Strategic Metrics) */}
       <div className="metrics-cards-grid">
         {/* 1. Chiffre d'Affaires Brut */}
-        <div className="metric-card-box primary-border">
-          <div className="metric-card-top">
-            <div className="metric-icon-circle blue-glow">
-              <DollarSign size={22} color="#ffffff" />
+        {canViewSubItem('dashboard', 'caBrut') && (
+          <div className="metric-card-box primary-border">
+            <div className="metric-card-top">
+              <div className="metric-icon-circle blue-glow">
+                <DollarSign size={22} color="#ffffff" />
+              </div>
+              <span className="metric-channel-tag store-web">
+                <Store size={12} /> Magasin + <Globe size={12} /> Web
+              </span>
             </div>
-            <span className="metric-channel-tag store-web">
-              <Store size={12} /> Magasin + <Globe size={12} /> Web
-            </span>
-          </div>
-          <div className="metric-card-meta">
-            <span className="metric-small-label">{t("CHIFFRE D'AFFAIRES BRUT", 'إجمالي المبيعات (CA)', 'GROSS REVENUE')}</span>
-            <h3 className="metric-main-value">{totalRevenue.toLocaleString()} DZD</h3>
-            <div className="metric-breakdown-row">
-              <span><Store size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {storeRevenue.toLocaleString()} DA</span>
-              <span>•</span>
-              <span><Globe size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {webRevenue.toLocaleString()} DA</span>
+            <div className="metric-card-meta">
+              <span className="metric-small-label">{t("CHIFFRE D'AFFAIRES BRUT", 'إجمالي المبيعات (CA)', 'GROSS REVENUE')}</span>
+              <h3 className="metric-main-value">
+                {canViewFinancials ? `${totalRevenue.toLocaleString()} DZD` : '**** DZD'}
+              </h3>
+              {canViewFinancials && (
+                <div className="metric-breakdown-row">
+                  <span><Store size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {storeRevenue.toLocaleString()} DA</span>
+                  <span>•</span>
+                  <span><Globe size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {webRevenue.toLocaleString()} DA</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* 2. Bénéfice Net Réel */}
-        <div className="metric-card-box green-border">
-          <div className="metric-card-top">
-            <div className="metric-icon-circle green-bg">
-              <PiggyBank size={22} color="#ffffff" />
+        {canViewSubItem('dashboard', 'beneficeNet') && (
+          <div className="metric-card-box green-border">
+            <div className="metric-card-top">
+              <div className="metric-icon-circle green-bg">
+                <PiggyBank size={22} color="#ffffff" />
+              </div>
+              <span className="trend-badge positive">
+                {canViewFinancials ? `${netMarginPercent}% ${t('Marge', 'هامش', 'Margin')}` : '**** %'}
+              </span>
             </div>
-            <span className="trend-badge positive">
-              {netMarginPercent}% {t('Marge', 'هامش', 'Margin')}
-            </span>
+            <div className="metric-card-meta">
+              <span className="metric-small-label">{t('BÉNÉFICE NET RÉEL', 'الأرباح الصافية الحقيقية', 'REAL NET PROFIT')}</span>
+              <h3 className="metric-main-value green-text">
+                {canViewFinancials ? `+${totalNetProfit.toLocaleString()} DZD` : '**** DZD'}
+              </h3>
+              <span className="metric-subtext">
+                {canViewFinancials 
+                  ? t('Marge réelle calculée (Vente - Achat)', 'صافي الربح بعد خصم سعر الشراء', 'Real margin calculated (Sales - Purchase)')
+                  : t('Données financières confidentielles', 'معلومات مالية سرية', 'Confidential financial data')}
+              </span>
+            </div>
           </div>
-          <div className="metric-card-meta">
-            <span className="metric-small-label">{t('BÉNÉFICE NET RÉEL', 'الأرباح الصافية الحقيقية', 'REAL NET PROFIT')}</span>
-            <h3 className="metric-main-value green-text">+{totalNetProfit.toLocaleString()} DZD</h3>
-            <span className="metric-subtext">{t('Marge réelle calculée (Vente - Achat)', 'صافي الربح بعد خصم سعر الشراء', 'Real margin calculated (Sales - Purchase)')}</span>
-          </div>
-        </div>
+        )}
 
         {/* 3. Valeur du Stock en Dépot (Capital) */}
-        <div className="metric-card-box purple-border">
-          <div className="metric-card-top">
-            <div className="metric-icon-circle purple-bg">
-              <Box size={22} color="#ffffff" />
+        {canViewSubItem('dashboard', 'valeurStock') && (
+          <div className="metric-card-box purple-border">
+            <div className="metric-card-top">
+              <div className="metric-icon-circle purple-bg">
+                <Box size={22} color="#ffffff" />
+              </div>
+              <span className="trend-badge purple">
+                {totalLaptopsCount + totalPiecesCount} {t('articles', 'عنصر', 'items')}
+              </span>
             </div>
-            <span className="trend-badge purple">
-              {totalLaptopsCount + totalPiecesCount} {t('articles', 'عنصر', 'items')}
-            </span>
-          </div>
-          <div className="metric-card-meta">
-            <span className="metric-small-label">{t('VALEUR DU STOCK DÉPOSÉ', 'رأس المال في المخزون', 'STOCK CAPITAL VALUATION')}</span>
-            <h3 className="metric-main-value purple-text">{totalStockCapital.toLocaleString()} DZD</h3>
-            <div className="metric-breakdown-row">
-              <span><Laptop size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {laptopsCapital.toLocaleString()} DA</span>
-              <span>•</span>
-              <span><Wrench size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {piecesCapital.toLocaleString()} DA</span>
+            <div className="metric-card-meta">
+              <span className="metric-small-label">{t('VALEUR DU STOCK DÉPOSÉ', 'رأس المال في المخزون', 'STOCK CAPITAL VALUATION')}</span>
+              <h3 className="metric-main-value purple-text">
+                {canViewFinancials ? `${totalStockCapital.toLocaleString()} DZD` : '**** DZD'}
+              </h3>
+              {canViewFinancials ? (
+                <div className="metric-breakdown-row">
+                  <span><Laptop size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {laptopsCapital.toLocaleString()} DA</span>
+                  <span>•</span>
+                  <span><Wrench size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> {piecesCapital.toLocaleString()} DA</span>
+                </div>
+              ) : (
+                <div className="metric-breakdown-row">
+                  <span>{totalLaptopsCount} Laptops</span>
+                  <span>•</span>
+                  <span>{totalPiecesCount} Pièces</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* 4. Commandes Web & Ventes */}
-        <div className="metric-card-box cyan-border">
-          <div className="metric-card-top">
-            <div className="metric-icon-circle cyan-bg">
-              <ShoppingBag size={22} color="#ffffff" />
+        {canViewSubItem('dashboard', 'commandesWeb') && (
+          <div className="metric-card-box cyan-border">
+            <div className="metric-card-top">
+              <div className="metric-icon-circle cyan-bg">
+                <ShoppingBag size={22} color="#ffffff" />
+              </div>
+              {pendingWebOrders > 0 && (
+                <span className="trend-badge warning-pulse">
+                  {pendingWebOrders} {t('en attente', 'جديدة', 'pending')}
+                </span>
+              )}
             </div>
-            {pendingWebOrders > 0 && (
-              <span className="trend-badge warning-pulse">
-                {pendingWebOrders} {t('en attente', 'جديدة', 'pending')}
+            <div className="metric-card-meta">
+              <span className="metric-small-label">{t('COMMANDES WEB', 'طلبيات الموقع الإلكتروني', 'WEB ORDERS')}</span>
+              <h3 className="metric-main-value">{validOrders.length}</h3>
+              <span className="metric-subtext">
+                {canViewFinancials 
+                  ? `${webRevenue.toLocaleString()} DZD ${t('générés sur la boutique', 'مبيعات الموقع', 'generated online')}`
+                  : `${validOrders.length} ${t('commandes enregistrées', 'طلبيات مسجلة', 'registered orders')}`}
               </span>
-            )}
+            </div>
           </div>
-          <div className="metric-card-meta">
-            <span className="metric-small-label">{t('COMMANDES WEB', 'طلبيات الموقع الإلكتروني', 'WEB ORDERS')}</span>
-            <h3 className="metric-main-value">{validOrders.length}</h3>
-            <span className="metric-subtext">{webRevenue.toLocaleString()} DZD {t('générés sur la boutique', 'مبيعات الموقع', 'generated online')}</span>
-          </div>
-        </div>
+        )}
 
         {/* 5. Alertes Stock & SAV */}
-        <div className="metric-card-box amber-border" onClick={() => navigate('/reparations')} style={{ cursor: 'pointer' }}>
-          <div className="metric-card-top">
-            <div className="metric-icon-circle amber-bg">
-              <Wrench size={22} color="#ffffff" />
+        {canViewSubItem('dashboard', 'savAlertes') && (
+          <div className="metric-card-box amber-border" onClick={() => navigate('/reparations')} style={{ cursor: 'pointer' }}>
+            <div className="metric-card-top">
+              <div className="metric-icon-circle amber-bg">
+                <Wrench size={22} color="#ffffff" />
+              </div>
+              {activeRepairsCount > 0 && (
+                <span className="trend-badge alert">
+                  {activeRepairsCount} {t('SAV en cours', 'في الصيانة', 'active repairs')}
+                </span>
+              )}
             </div>
-            {activeRepairsCount > 0 && (
-              <span className="trend-badge alert">
-                {activeRepairsCount} {t('SAV en cours', 'في الصيانة', 'active repairs')}
-              </span>
-            )}
+            <div className="metric-card-meta">
+              <span className="metric-small-label">{t('RÉPARATIONS SAV & ALERTES', 'الصيانة وتنبيهات المخزون', 'REPAIRS & STOCK ALERTS')}</span>
+              <h3 className="metric-main-value amber-text">{activeRepairsCount} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>({totalLowStock} {t('stock', 'مخزون', 'low stock')})</span></h3>
+              <span className="metric-subtext">{activeRepairsCount} {t('dossiers de réparation actifs', 'جهاز قيد الإصلاح حالياً', 'active repair dossiers')}</span>
+            </div>
           </div>
-          <div className="metric-card-meta">
-            <span className="metric-small-label">{t('RÉPARATIONS SAV & ALERTES', 'الصيانة وتنبيهات المخزون', 'REPAIRS & STOCK ALERTS')}</span>
-            <h3 className="metric-main-value amber-text">{activeRepairsCount} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>({totalLowStock} {t('stock', 'مخزون', 'low stock')})</span></h3>
-            <span className="metric-subtext">{activeRepairsCount} {t('dossiers de réparation actifs', 'جهاز قيد الإصلاح حالياً', 'active repair dossiers')}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Visual Analytics Section (Charts) */}
       <div className="dashboard-charts-grid">
         {/* Chart 1: Revenue & Profit Trend (Last 7 Days) */}
-        <div className="chart-card-box main-chart">
-          <div className="chart-header">
-            <div className="chart-title-group">
-              <TrendingUp size={20} className="chart-icon" />
-              <div>
-                <h3>{t('Évolution des Revenus & Marge (7 Derniers Jours)', 'إحصائيات المبيعات والأرباح (آخر 7 أيام)', 'Revenue & Profit Trend (Last 7 Days)')}</h3>
-                <p>{t('Ventes Magasin vs Web avec estimation de marge', 'مقارنة يومية بين مبيعات المحل والموقع', 'Store Sales vs Web Orders with margin estimate')}</p>
+        {canViewSubItem('dashboard', 'chartRevenue') && (
+          <div className="chart-card-box main-chart">
+            <div className="chart-header">
+              <div className="chart-title-group">
+                <TrendingUp size={20} className="chart-icon" />
+                <div>
+                  <h3>{t('Évolution des Revenus & Marge (7 Derniers Jours)', 'إحصائيات المبيعات والأرباح (آخر 7 أيام)', 'Revenue & Profit Trend (Last 7 Days)')}</h3>
+                  <p>{t('Ventes Magasin vs Web avec estimation de marge', 'مقارنة يومية بين مبيعات المحل والموقع', 'Store Sales vs Web Orders with margin estimate')}</p>
+                </div>
+              </div>
+              <div className="chart-legend">
+                <span className="legend-item store"><span className="dot store-dot"></span> {t('Magasin', 'المحل', 'Store')}</span>
+                <span className="legend-item web"><span className="dot web-dot"></span> {t('Web', 'الموقع', 'Web')}</span>
+                <span className="legend-item profit"><span className="dot profit-dot"></span> {t('Marge', 'هامش', 'Margin')}</span>
               </div>
             </div>
-            <div className="chart-legend">
-              <span className="legend-item store"><span className="dot store-dot"></span> {t('Magasin', 'المحل', 'Store')}</span>
-              <span className="legend-item web"><span className="dot web-dot"></span> {t('Web', 'الموقع', 'Web')}</span>
-              <span className="legend-item profit"><span className="dot profit-dot"></span> {t('Marge', 'هامش', 'Margin')}</span>
-            </div>
-          </div>
 
-          {/* SVG Custom Bar Chart */}
-          <div className="chart-body">
-            <div className="svg-chart-container">
-              {chartData.map((d, idx) => {
-                const totalRev = d.store + d.web;
-                const storeHeight = maxChartValue > 0 ? (d.store / maxChartValue) * 160 : 0;
-                const webHeight = maxChartValue > 0 ? (d.web / maxChartValue) * 160 : 0;
-                const profitHeight = maxChartValue > 0 ? (d.profit / maxChartValue) * 160 : 0;
-
-                return (
-                  <div key={idx} className="bar-column">
-                    <div className="bar-stack-wrapper">
-                      {totalRev > 0 ? (
-                        <>
-                          <div
-                            className="bar-segment web-bar"
-                            style={{ height: `${webHeight}px` }}
-                            title={`Web: ${d.web.toLocaleString()} DZD`}
-                          />
-                          <div
-                            className="bar-segment store-bar"
-                            style={{ height: `${storeHeight}px` }}
-                            title={`Magasin: ${d.store.toLocaleString()} DZD`}
-                          />
-                        </>
-                      ) : (
-                        <div className="bar-segment empty-bar" style={{ height: '4px' }} />
-                      )}
-
-                      {/* Profit Indicator Bar */}
-                      {d.profit > 0 && (
-                        <div
-                          className="profit-line-marker"
-                          style={{ bottom: `${profitHeight}px` }}
-                          title={`Profit: ${d.profit.toLocaleString()} DZD`}
-                        />
-                      )}
-                    </div>
-                    <span className="bar-amount-label">
-                      {totalRev > 0 ? `${Math.round(totalRev / 1000)}k` : '0'}
-                    </span>
-                    <span className="bar-day-label">{d.label}</span>
+            {/* SVG Custom Bar Chart */}
+            <div className="chart-body">
+              {!canViewFinancials ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '12px', padding: '30px', textAlign: 'center' }}>
+                  <Lock size={36} style={{ color: 'var(--color-brand)', opacity: 0.8 }} />
+                  <div style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    {t('Données Financières Restreintes', 'بيانات مبيعات وأرباح سرية', 'Restricted Financial Chart')}
                   </div>
-                );
-              })}
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', maxWidth: '380px' }}>
+                    {t('L\'accès aux graphiques d\'évolution des chiffres d\'affaires et des marges bénéficiaires est réservé aux administrateurs.', 'الاطلاع على الرسوم البيانية للأرباح والمبيعات محمي لصاحب العمل فقط.', 'Access to revenue and profit trend charts is restricted.')}
+                  </div>
+                </div>
+              ) : (
+                <div className="svg-chart-container">
+                  {chartData.map((d, idx) => {
+                    const totalRev = d.store + d.web;
+                    const storeHeight = maxChartValue > 0 ? (d.store / maxChartValue) * 160 : 0;
+                    const webHeight = maxChartValue > 0 ? (d.web / maxChartValue) * 160 : 0;
+                    const profitHeight = maxChartValue > 0 ? (d.profit / maxChartValue) * 160 : 0;
+
+                    return (
+                      <div key={idx} className="bar-column">
+                        <div className="bar-stack-wrapper">
+                          {totalRev > 0 ? (
+                            <>
+                              <div
+                                className="bar-segment web-bar"
+                                style={{ height: `${webHeight}px` }}
+                                title={`Web: ${d.web.toLocaleString()} DZD`}
+                              />
+                              <div
+                                className="bar-segment store-bar"
+                                style={{ height: `${storeHeight}px` }}
+                                title={`Magasin: ${d.store.toLocaleString()} DZD`}
+                              />
+                            </>
+                          ) : (
+                            <div className="bar-segment empty-bar" style={{ height: '4px' }} />
+                          )}
+
+                          {/* Profit Indicator Bar */}
+                          {d.profit > 0 && (
+                            <div
+                              className="profit-line-marker"
+                              style={{ bottom: `${profitHeight}px` }}
+                              title={`Profit: ${d.profit.toLocaleString()} DZD`}
+                            />
+                          )}
+                        </div>
+                        <span className="bar-amount-label">
+                          {totalRev > 0 ? `${Math.round(totalRev / 1000)}k` : '0'}
+                        </span>
+                        <span className="bar-day-label">{d.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Chart 2: Channel & Revenue Breakdown */}
-        <div className="chart-card-box side-chart">
-          <div className="chart-header">
-            <div className="chart-title-group">
-              <PieChart size={20} className="chart-icon" />
-              <div>
-                <h3>{t('Répartition des Revenus', 'توزيع المبيعات والتكلفة', 'Revenue Distribution')}</h3>
-                <p>{t('Poids des canaux de vente', 'نسبة مبيعات المحل مقابل الموقع', 'Sales channel weight')}</p>
+        {canViewSubItem('dashboard', 'chartDistribution') && (
+          <div className="chart-card-box side-chart">
+            <div className="chart-header">
+              <div className="chart-title-group">
+                <PieChart size={20} className="chart-icon" />
+                <div>
+                  <h3>{t('Répartition des Revenus', 'توزيع المبيعات والتكلفة', 'Revenue Distribution')}</h3>
+                  <p>{t('Poids des canaux de vente', 'نسبة مبيعات المحل مقابل الموقع', 'Sales channel weight')}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="channel-distribution-body">
+              {/* Store Ratio Progress */}
+              <div className="distribution-item">
+                <div className="dist-label-row">
+                  <span className="dist-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Store size={14} color="#0055ff" /> {t('Ventes Magasin', 'المحل التجاري', 'Store Sales')}
+                  </span>
+                  <span className="dist-value">
+                    {canViewFinancials ? `${storeRevenue.toLocaleString()} DZD` : '**** DZD'}
+                  </span>
+                </div>
+                <div className="progress-bar-bg">
+                  <div
+                    className="progress-bar-fill store-fill"
+                    style={{ width: `${totalRevenue > 0 ? (storeRevenue / totalRevenue) * 100 : 50}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Web Ratio Progress */}
+              <div className="distribution-item">
+                <div className="dist-label-row">
+                  <span className="dist-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Globe size={14} color="#06b6d4" /> {t('Commandes Web', 'الموقع الإلكتروني', 'Web Orders')}
+                  </span>
+                  <span className="dist-value">
+                    {canViewFinancials ? `${webRevenue.toLocaleString()} DZD` : '**** DZD'}
+                  </span>
+                </div>
+                <div className="progress-bar-bg">
+                  <div
+                    className="progress-bar-fill web-fill"
+                    style={{ width: `${totalRevenue > 0 ? (webRevenue / totalRevenue) * 100 : 50}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Retours & Annulations */}
+              <div className="distribution-item warning-box">
+                <div className="dist-label-row">
+                  <span className="dist-title warning-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangle size={14} color="#ef4444" /> {t('Retours & Annulations', 'المرتجعات والملغاة', 'Returns & Cancellations')}
+                  </span>
+                  <span className="dist-value warning-text">
+                    {canViewFinancials ? `-${totalReturnedAmount.toLocaleString()} DZD` : '**** DZD'}
+                  </span>
+                </div>
+                <span className="dist-subtext">
+                  {totalReturnedCount} {t('factures/commandes annulées', 'عمليات مرجعة/ملغاة مستبعدة', 'canceled transactions')}
+                </span>
+              </div>
+
+              {/* Stock Valuation Card Summary */}
+              <div className="stock-summary-mini-card">
+                <div className="mini-card-icon">
+                  <Box size={20} color="#8B5CF6" />
+                </div>
+                <div className="mini-card-info">
+                  <span className="mini-card-label">{t('Stock Laptops & Pièces', 'إجمالي مخزون العتاد', 'Laptops & Parts Stock')}</span>
+                  <span className="mini-card-val">{totalLaptopsCount} Laptops | {totalPiecesCount} {t('Pièces', 'قطع', 'Parts')}</span>
+                </div>
               </div>
             </div>
           </div>
-
-          <div className="channel-distribution-body">
-            {/* Store Ratio Progress */}
-            <div className="distribution-item">
-              <div className="dist-label-row">
-                <span className="dist-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Store size={14} color="#0055ff" /> {t('Ventes Magasin', 'المحل التجاري', 'Store Sales')}
-                </span>
-                <span className="dist-value">{storeRevenue.toLocaleString()} DZD</span>
-              </div>
-              <div className="progress-bar-bg">
-                <div
-                  className="progress-bar-fill store-fill"
-                  style={{ width: `${totalRevenue > 0 ? (storeRevenue / totalRevenue) * 100 : 50}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Web Ratio Progress */}
-            <div className="distribution-item">
-              <div className="dist-label-row">
-                <span className="dist-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Globe size={14} color="#06b6d4" /> {t('Commandes Web', 'الموقع الإلكتروني', 'Web Orders')}
-                </span>
-                <span className="dist-value">{webRevenue.toLocaleString()} DZD</span>
-              </div>
-              <div className="progress-bar-bg">
-                <div
-                  className="progress-bar-fill web-fill"
-                  style={{ width: `${totalRevenue > 0 ? (webRevenue / totalRevenue) * 100 : 50}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Retours & Annulations */}
-            <div className="distribution-item warning-box">
-              <div className="dist-label-row">
-                <span className="dist-title warning-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <AlertTriangle size={14} color="#ef4444" /> {t('Retours & Annulations', 'المرتجعات والملغاة', 'Returns & Cancellations')}
-                </span>
-                <span className="dist-value warning-text">-{totalReturnedAmount.toLocaleString()} DZD</span>
-              </div>
-              <span className="dist-subtext">
-                {totalReturnedCount} {t('factures/commandes annulées', 'عمليات مرجعة/ملغاة مستبعدة', 'canceled transactions')}
-              </span>
-            </div>
-
-            {/* Stock Valuation Card Summary */}
-            <div className="stock-summary-mini-card">
-              <div className="mini-card-icon">
-                <Box size={20} color="#8B5CF6" />
-              </div>
-              <div className="mini-card-info">
-                <span className="mini-card-label">{t('Stock Laptops & Pièces', 'إجمالي مخزون العتاد', 'Laptops & Parts Stock')}</span>
-                <span className="mini-card-val">{totalLaptopsCount} Laptops | {totalPiecesCount} {t('Pièces', 'قطع', 'Parts')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Bottom Live Activity Grids */}
-      <div className="activity-cards-grid">
-        {/* Left: Recent Transactions (Combined Store POS + Web Orders) */}
-        <div className="activity-main-card">
-          <div className="activity-card-header">
-            <div className="activity-header-title">
-              <ReceiptText size={20} color="#0055ff" />
-              <h3>{t('Dernières Transactions (Magasin & Web)', 'أحدث المعاملات (المحل والموقع)', 'Recent Transactions (Store & Web)')}</h3>
-            </div>
-            <button className="view-all-link" onClick={() => navigate('/factures')}>
-              <span>{t('Voir tout', 'عرض الفواتير', 'View All')}</span>
-              <ArrowRight size={14} />
-            </button>
-          </div>
+      {(canViewSubItem('dashboard', 'recentTransactions') || canViewSubItem('dashboard', 'lowStockAlerts')) && (
+        <div className="activity-cards-grid">
+          {/* Left: Recent Transactions (Combined Store POS + Web Orders) */}
+          {canViewSubItem('dashboard', 'recentTransactions') && (
+            <div className="activity-main-card">
+              <div className="activity-card-header">
+                <div className="activity-header-title">
+                  <ReceiptText size={20} color="#0055ff" />
+                  <h3>{t('Dernières Transactions (Magasin & Web)', 'أحدث المعاملات (المحل والموقع)', 'Recent Transactions (Store & Web)')}</h3>
+                </div>
+                <button className="view-all-link" onClick={() => navigate('/factures')}>
+                  <span>{t('Voir tout', 'عرض الفواتير', 'View All')}</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
 
-          <div className="activity-card-body">
-            {loading ? (
-              <div className="dashboard-loading">
-                <Loader2 size={32} className="spin-icon" />
-              </div>
-            ) : recentTransactions.length === 0 ? (
-              <div className="empty-state-content">
-                <Globe size={42} color="#94a3b8" />
-                <h3>{t('Aucune transaction récente', 'لا توجد معاملات في هذه الفترة', 'No recent transactions')}</h3>
-                <p>{t('Les factures et commandes s\'afficheront ici en temps réel.', 'المبيعات الجديدة من المحل والموقع ستظهر هنا تلقائياً', 'New store sales and web orders will appear here automatically.')}</p>
-              </div>
-            ) : (
-              <div className="live-orders-list">
-                {recentTransactions.map(tx => (
-                  <div
-                    className="live-order-row"
-                    key={tx.id}
-                    onClick={() => navigate(tx.type === 'web' ? '/orders' : '/factures')}
-                  >
-                    <div className="order-main-info">
-                      <div className="order-title-row">
-                        <span className="order-id">{tx.id}</span>
-                        <span className={`channel-badge ${tx.type}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          {tx.type === 'web' ? <Globe size={11} /> : <Store size={11} />}
-                          <span>{tx.type === 'web' ? 'Web' : 'Magasin'}</span>
-                        </span>
+              <div className="activity-card-body">
+                {loading ? (
+                  <div className="dashboard-loading">
+                    <Loader2 size={32} className="spin-icon" />
+                  </div>
+                ) : recentTransactions.length === 0 ? (
+                  <div className="empty-state-content">
+                    <Globe size={42} color="#94a3b8" />
+                    <h3>{t('Aucune transaction récente', 'لا توجد معاملات في هذه الفترة', 'No recent transactions')}</h3>
+                    <p>{t('Les factures et commandes s\'afficheront ici en temps réel.', 'المبيعات الجديدة من المحل والموقع ستظهر هنا تلقائياً', 'New store sales and web orders will appear here automatically.')}</p>
+                  </div>
+                ) : (
+                  <div className="live-orders-list">
+                    {recentTransactions.map(tx => (
+                      <div
+                        className="live-order-row"
+                        key={tx.id}
+                        onClick={() => navigate(tx.type === 'web' ? '/orders' : '/factures')}
+                      >
+                        <div className="order-main-info">
+                          <div className="order-title-row">
+                            <span className="order-id">{tx.id}</span>
+                            <span className={`channel-badge ${tx.type}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              {tx.type === 'web' ? <Globe size={11} /> : <Store size={11} />}
+                              <span>{tx.type === 'web' ? 'Web' : 'Magasin'}</span>
+                            </span>
+                          </div>
+                          <span className="order-customer">{tx.customerName} • {tx.itemCount} article(s)</span>
+                        </div>
+
+                        <div className="order-meta-info">
+                          <span className="order-amount">{canViewFinancials ? `${tx.amount.toLocaleString()} DZD` : '**** DZD'}</span>
+                          <span className="order-date">{tx.dateStr}</span>
+                        </div>
                       </div>
-                      <span className="order-customer">{tx.customerName} • {tx.itemCount} article(s)</span>
-                    </div>
-
-                    <div className="order-meta-info">
-                      <span className="order-amount">{tx.amount.toLocaleString()} DZD</span>
-                      <span className="order-date">{tx.dateStr}</span>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Low Stock Alerts */}
-        <div className="activity-main-card">
-          <div className="activity-card-header">
-            <div className="activity-header-title">
-              <AlertTriangle size={20} color="#f59e0b" />
-              <h3>{isAr ? 'تنبيهات المخزون المنخفض' : 'Alertes Stock Bas & Ruptures'}</h3>
             </div>
-            <button className="view-all-link" onClick={() => navigate('/vente-laptops')}>
-              <span>{isAr ? 'عرض المخزون' : 'Voir le stock'}</span>
-              <ArrowRight size={14} />
-            </button>
-          </div>
+          )}
 
-          <div className="activity-card-body">
-            {totalLowStock === 0 ? (
-              <div className="empty-state-content">
-                <CheckCircle2 size={42} color="#10b981" />
-                <h3>{isAr ? 'المخزون ممتاز' : 'Tous les stocks sont optimaux'}</h3>
-                <p>{isAr ? 'لا توجد منتجات منخفضة في المخزون حالياً' : 'Aucun produit en alerte de stock bas.'}</p>
+          {/* Right: Low Stock Alerts */}
+          {canViewSubItem('dashboard', 'lowStockAlerts') && (
+            <div className="activity-main-card">
+              <div className="activity-card-header">
+                <div className="activity-header-title">
+                  <AlertTriangle size={20} color="#f59e0b" />
+                  <h3>{isAr ? 'تنبيهات المخزون المنخفض' : 'Alertes Stock Bas & Ruptures'}</h3>
+                </div>
+                <button className="view-all-link" onClick={() => navigate('/vente-laptops')}>
+                  <span>{isAr ? 'عرض المخزون' : 'Voir le stock'}</span>
+                  <ArrowRight size={14} />
+                </button>
               </div>
-            ) : (
-              <div className="alerts-list">
-                {lowStockLaptops.map(l => (
-                  <div className="alert-item-row" key={l.id} onClick={() => navigate('/vente-laptops')}>
-                    <div className="alert-item-icon warning"><Laptop size={18} /></div>
-                    <div className="alert-item-info">
-                      <span className="alert-item-name">{l.name.fr || l.name.ar}</span>
-                      <span className="alert-item-sub">Stock Restant: <strong>{l.stock} unités</strong></span>
-                    </div>
-                    <span className="alert-tag warning">Alerte Stock</span>
-                  </div>
-                ))}
 
-                {lowStockPieces.map(p => (
-                  <div className="alert-item-row" key={p.id} onClick={() => navigate('/vente-pieces')}>
-                    <div className="alert-item-icon danger"><Cpu size={18} /></div>
-                    <div className="alert-item-info">
-                      <span className="alert-item-name">{p.name} ({p.ref})</span>
-                      <span className="alert-item-sub">Stock Restant: <strong>{p.stock} pièces</strong></span>
-                    </div>
-                    <span className="alert-tag danger">Rupture Proche</span>
+              <div className="activity-card-body">
+                {totalLowStock === 0 ? (
+                  <div className="empty-state-content">
+                    <CheckCircle2 size={42} color="#10b981" />
+                    <h3>{isAr ? 'المخزون ممتاز' : 'Tous les stocks sont optimaux'}</h3>
+                    <p>{isAr ? 'لا توجد منتجات منخفضة في المخزون حالياً' : 'Aucun produit en alerte de stock bas.'}</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="alerts-list">
+                    {lowStockLaptops.map(l => (
+                      <div className="alert-item-row" key={l.id} onClick={() => navigate('/vente-laptops')}>
+                        <div className="alert-item-icon warning"><Laptop size={18} /></div>
+                        <div className="alert-item-info">
+                          <span className="alert-item-name">{l.name.fr || l.name.ar}</span>
+                          <span className="alert-item-sub">Stock Restant: <strong>{l.stock} unités</strong></span>
+                        </div>
+                        <span className="alert-tag warning">Alerte Stock</span>
+                      </div>
+                    ))}
+
+                    {lowStockPieces.map(p => (
+                      <div className="alert-item-row" key={p.id} onClick={() => navigate('/vente-pieces')}>
+                        <div className="alert-item-icon danger"><Cpu size={18} /></div>
+                        <div className="alert-item-info">
+                          <span className="alert-item-name">{p.name} ({p.ref})</span>
+                          <span className="alert-item-sub">Stock Restant: <strong>{p.stock} pièces</strong></span>
+                        </div>
+                        <span className="alert-tag danger">Rupture Proche</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Styled CSS */}
       <style>{`

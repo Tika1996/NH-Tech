@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/ToastContext';
 import { getPublishedLaptops, getPublishedPieces, type WebsiteLaptop, type WebsitePiece } from '../lib/firebase';
+import { formatImageUrl } from '../lib/imageUtils';
 import { useCart } from '../lib/CartContext';
 import { ClientSpaceModal } from '../components/ClientSpaceModal';
 import {
@@ -186,7 +187,7 @@ export default function HomePage() {
       {/* ===== HERO SECTION ===== */}
       <section className="hero" style={{ padding: '60px 0 80px', position: 'relative' }}>
         <div className="container">
-          <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '40px', alignItems: 'center' }}>
+          <div className="hero-grid">
             
             {/* Left Content */}
             <div className="hero-content">
@@ -233,7 +234,7 @@ export default function HomePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
               
               {/* Top Quick Access Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '14px' }}>
                 <div className="nh-quick-card" onClick={() => setTrackingOpen(true)}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 87, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00F0FF' }}>
                     <Wrench size={20} />
@@ -358,7 +359,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '24px', maxWidth: '900px', margin: '0 auto' }}>
             {testimonials.map((t, idx) => (
               <div key={idx} className="formation-card" style={{ padding: '24px', borderRadius: '18px', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
@@ -421,7 +422,7 @@ export default function HomePage() {
               {popularProducts.map((prod) => (
                 <div key={prod.id} className="formation-card" style={{ borderRadius: '18px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
                   <div style={{ position: 'relative', height: '180px', overflow: 'hidden', background: '#07090E' }}>
-                    <img src={prod.image} alt={prod.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={formatImageUrl(prod.image)} alt={prod.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     {prod.badge && (
                       <span className={prod.badgeClass} style={{ position: 'absolute', top: '12px', right: '12px' }}>
                         {prod.badge}
@@ -463,7 +464,7 @@ export default function HomePage() {
       {/* ===== SECTION 5: FAQ SECTION ===== */}
       <section className="section">
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: '40px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '40px', alignItems: 'center' }}>
             
             {/* Left 3D Glowing Sphere Graphic */}
             <div style={{ textAlign: 'center', position: 'relative' }}>
@@ -529,7 +530,7 @@ export default function HomePage() {
       {/* ===== SECTION 6: STATS BAR ===== */}
       <section className="section" style={{ background: 'var(--bg-secondary)', padding: '50px 0' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '24px', textAlign: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '20px', textAlign: 'center' }}>
             <div>
               <Counter end={10000} prefix="+" />
               <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: '6px' }}>{isAr ? 'زبون سعيد' : 'Clients satisfaits'}</div>
@@ -568,7 +569,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '10px', minWidth: '340px' }}>
+            <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', gap: '10px', flex: 1, width: '100%' }}>
               <input
                 type="email"
                 required

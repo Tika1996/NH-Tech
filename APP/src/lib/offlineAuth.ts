@@ -135,6 +135,20 @@ export const getOfflineUsers = (): OfflineUser[] => {
     }
 };
 
+export const getOfflineUserByEmailOrUid = (email?: string, uid?: string): OfflineUser | null => {
+    const users = getOfflineUsers();
+    if (uid) {
+        const byUid = users.find(u => u.uid === uid || u.staffId === uid || u.firebaseUid === uid);
+        if (byUid) return byUid;
+    }
+    if (email) {
+        const norm = email.trim().toLowerCase();
+        const byEmail = users.find(u => (u.email || '').trim().toLowerCase() === norm);
+        if (byEmail) return byEmail;
+    }
+    return null;
+};
+
 export const removeOfflineCredentials = (email: string): boolean => {
     try {
         const store = localStorage.getItem(STORAGE_KEY);

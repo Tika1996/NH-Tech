@@ -10,6 +10,7 @@ jdk*
 *.zip
 *.apk
 *.exe
+.vite
 
 # Environment variables & secrets (CRITICAL - DO NOT PUSH)
 .env

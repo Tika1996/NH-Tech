@@ -43,7 +43,7 @@ export default function AboutPage() {
                   <img 
                     src="/brand/logo.png" 
                     alt="NH TECH Logo" 
-                    style={{ width: '220px', height: '220px', borderRadius: '24px', objectFit: 'contain', background: '#0B0C10', padding: '16px', border: '2px solid var(--color-primary)', boxShadow: 'var(--shadow-lg)' }}
+                    style={{ width: '220px', height: '220px', borderRadius: '24px', objectFit: 'contain', background: 'var(--bg-tertiary)', padding: '16px', border: '2px solid var(--color-primary)', boxShadow: 'var(--shadow-lg)' }}
                   />
                   <div style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'var(--gradient-principal)', color: 'white', padding: '8px 16px', borderRadius: 'var(--radius-full)', fontWeight: 700, fontSize: '0.85rem' }}>
                     ★ 4.9 (+1500 PC)

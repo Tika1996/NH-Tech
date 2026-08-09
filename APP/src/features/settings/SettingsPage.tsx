@@ -19,9 +19,14 @@ import {
   Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export function SettingsPage() {
   const { language, setLanguage, theme, setTheme } = useAppStore();
+  const { can } = usePermissions();
+  const canEdit = can('settings', 'edit');
+  const canDelete = can('settings', 'delete');
+
   const { showToast } = useToast();
   const navigate = useNavigate();
   const isAr = language === 'ar';
@@ -83,10 +88,12 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <button className="btn btn-primary save-btn" type="button" onClick={handleSave}>
-          <Save size={18} />
-          <span>{isAr ? 'حفظ' : 'Enregistrer'}</span>
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary save-btn" type="button" onClick={handleSave}>
+            <Save size={18} />
+            <span>{isAr ? 'حفظ' : 'Enregistrer'}</span>
+          </button>
+        )}
       </div>
 
       {/* 2-Column Settings Grid */}
@@ -373,14 +380,16 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <button
-          className="btn btn-danger-outline"
-          type="button"
-          onClick={() => setShowResetModal(true)}
-        >
-          <Trash2 size={16} />
-          <span>{isAr ? 'إعادة ضبط البيانات' : 'Réinitialiser les données'}</span>
-        </button>
+        {canDelete && (
+          <button
+            className="btn btn-danger-outline"
+            type="button"
+            onClick={() => setShowResetModal(true)}
+          >
+            <Trash2 size={16} />
+            <span>{isAr ? 'إعادة ضبط البيانات' : 'Réinitialiser les données'}</span>
+          </button>
+        )}
       </div>
 
       {/* Reset Data Confirmation Modal */}

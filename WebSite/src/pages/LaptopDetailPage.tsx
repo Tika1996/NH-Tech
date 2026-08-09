@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
 import { useCart } from '../lib/CartContext';
 import { getPublishedLaptops, submitWebOrder, type WebsiteLaptop } from '../lib/firebase';
+import { formatImageUrl } from '../lib/imageUtils';
 import {
   Laptop, Cpu, HardDrive, Monitor, Shield, ShoppingCart,
   ArrowLeft, CheckCircle, Phone, User, MapPin, MessageSquare, Loader2, Share2,
@@ -95,12 +96,12 @@ export default function LaptopDetailPage() {
   };
 
   const name = laptop ? (laptop.name?.[lang as 'fr' | 'ar'] || laptop.name?.fr || laptop.name?.ar || '') : '';
-  const mainImg = laptop?.image || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800';
+  const mainImg = formatImageUrl(laptop?.image) || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800';
 
   // Use real gallery images if uploaded from app, otherwise fallback
   const imagesGallery = Array.from(new Set([
     mainImg,
-    ...(laptop?.galleryImages || [])
+    ...(laptop?.galleryImages || []).map(img => formatImageUrl(img))
   ])).filter(Boolean);
 
   if (loading) {
@@ -157,8 +158,8 @@ export default function LaptopDetailPage() {
         </button>
       </div>
 
-      {/* Main 2-Column Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', alignItems: 'start', marginBottom: '40px' }}>
+      {/* Main 2-Column Section (Responsive) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', alignItems: 'start', marginBottom: '40px' }}>
 
         {/* LEFT COLUMN: Gallery & Specifications */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -203,8 +204,8 @@ export default function LaptopDetailPage() {
                 </span>
 
                 {/* Interactive Controls Overlay at Bottom */}
-                <div style={{ position: 'absolute', bottom: '16px', display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.06)' }}>
-                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: '#1e293b' }}>
+                <div style={{ position: 'absolute', bottom: '16px', display: 'flex', gap: '8px', background: 'var(--bg-header)', backdropFilter: 'blur(8px)', padding: '6px 12px', borderRadius: '20px', border: '1px solid var(--border-color)' }}>
+                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-primary)' }}>
                     <RotateCcw size={13} /> 360°
                   </button>
                   <span style={{ opacity: 0.3 }}>|</span>
@@ -213,16 +214,16 @@ export default function LaptopDetailPage() {
                       if (laptop.videoUrl) window.open(laptop.videoUrl, '_blank');
                       else alert(isAr ? 'لا يوجد فيديو متوفر لهذا المنتج' : 'Aucune vidéo démo disponible pour ce produit.');
                     }}
-                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: laptop.videoUrl ? '#1E60FF' : '#1e293b' }}
+                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: laptop.videoUrl ? '#1E60FF' : 'var(--text-primary)' }}
                   >
                     <Video size={13} /> {isAr ? 'فيديو' : 'Vidéo'}
                   </button>
                   <span style={{ opacity: 0.3 }}>|</span>
-                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: '#1e293b' }}>
+                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-primary)' }}>
                     <ImageIcon size={13} /> Galerie
                   </button>
                   <span style={{ opacity: 0.3 }}>|</span>
-                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1e293b' }}>
+                  <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-primary)' }}>
                     <Maximize2 size={13} />
                   </button>
                 </div>
@@ -242,81 +243,81 @@ export default function LaptopDetailPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 20px' }}>
               {/* CPU */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><Cpu size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><Cpu size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Processeur</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{laptop.specs?.cpu || 'Intel Core i7-1355U'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>10 cœurs, 12 threads</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>10 cœurs, 12 threads</div>
                 </div>
               </div>
 
               {/* RAM */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><HardDrive size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><HardDrive size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Mémoire RAM</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{laptop.specs?.ram || '32 GB DDR5'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>5200 MHz</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>5200 MHz</div>
                 </div>
               </div>
 
               {/* SSD */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><HardDrive size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><HardDrive size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Stockage</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{laptop.specs?.ssd || '512 GB SSD NVMe'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>M.2 PCIe Gen4</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>M.2 PCIe Gen4</div>
                 </div>
               </div>
 
               {/* GPU */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><Monitor size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><Monitor size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Carte Graphique</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{laptop.specs?.gpu || 'NVIDIA T550'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>4GB GDDR6</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>4GB GDDR6</div>
                 </div>
               </div>
 
               {/* Écran */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><Monitor size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><Monitor size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Écran</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{laptop.specs?.screen || '15.6" FHD'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Anti-glare, 250 nits</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Anti-glare, 250 nits</div>
                 </div>
               </div>
 
               {/* OS */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><Laptop size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><Laptop size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Système</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>Windows 11 Pro</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>64-bit Officiel</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>64-bit Officiel</div>
                 </div>
               </div>
 
               {/* Connectivity */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><Wifi size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><Wifi size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Connectivité</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>Wi-Fi 6E, Bluetooth 5.3</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>USB-C, HDMI, RJ-45</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>USB-C, HDMI, RJ-45</div>
                 </div>
               </div>
 
               {/* Weight & Battery */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: '#F1F5F9', color: '#1E60FF' }}><Battery size={16} /></div>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--bg-tertiary)', color: 'var(--color-primary)' }}><Battery size={16} /></div>
                 <div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Batterie & Poids</div>
                   <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-primary)' }}>Jusqu'à 14h (1.79 kg)</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Ultra portable</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Ultra portable</div>
                 </div>
               </div>
             </div>
@@ -328,18 +329,10 @@ export default function LaptopDetailPage() {
               📦 Inclus dans la boîte
             </h4>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <span style={{ padding: '8px 14px', borderRadius: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                🔌 Chargeur Rapide USB-C
-              </span>
-              <span style={{ padding: '8px 14px', borderRadius: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                ⚡ Câble d'alimentation
-              </span>
-              <span style={{ padding: '8px 14px', borderRadius: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                📄 Documentation & Guide
-              </span>
-              <span style={{ padding: '8px 14px', borderRadius: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                💳 Carte de garantie
-              </span>
+              <span className="nh-spec-badge">🔌 Chargeur Rapide USB-C</span>
+              <span className="nh-spec-badge">⚡ Câble d'alimentation</span>
+              <span className="nh-spec-badge">📄 Documentation & Guide</span>
+              <span className="nh-spec-badge">💳 Carte de garantie</span>
             </div>
           </div>
         </div>
@@ -354,18 +347,18 @@ export default function LaptopDetailPage() {
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#1E60FF', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.75rem' }}>
                   {laptop.brand?.[0] || 'HP'}
                 </div>
-                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                   {laptop.brand || 'HP'}
                 </span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', color: '#64748B', fontWeight: 600 }}>
+                <button style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
                   <GitCompare size={14} /> Comparer
                 </button>
                 <button
                   onClick={() => setIsFavorite(!isFavorite)}
-                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', color: isFavorite ? '#EF4444' : '#64748B', fontWeight: 600 }}
+                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', color: isFavorite ? '#EF4444' : 'var(--text-secondary)', fontWeight: 600 }}
                 >
                   <Heart size={14} fill={isFavorite ? '#EF4444' : 'none'} /> Favoris
                 </button>
@@ -375,7 +368,7 @@ export default function LaptopDetailPage() {
             <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-primary)', margin: '4px 0 6px', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
               {name}
             </h1>
-            <p style={{ fontSize: '0.92rem', color: '#64748B', margin: 0 }}>
+            <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', margin: 0 }}>
               Performance professionnelle. Fiabilité absolue pour vos travaux intensifs.
             </p>
           </div>
@@ -397,22 +390,22 @@ export default function LaptopDetailPage() {
           {/* Key Specs Pills Bar */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {laptop.specs?.cpu && (
-              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Cpu size={13} color="#1E60FF" /> {laptop.specs.cpu}
               </span>
             )}
             {laptop.specs?.ram && (
-              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <HardDrive size={13} color="#1E60FF" /> {laptop.specs.ram}
               </span>
             )}
             {laptop.specs?.ssd && (
-              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <HardDrive size={13} color="#1E60FF" /> {laptop.specs.ssd}
               </span>
             )}
             {laptop.specs?.gpu && (
-              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ padding: '6px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border-color, #e2e8f0)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Monitor size={13} color="#1E60FF" /> {laptop.specs.gpu}
               </span>
             )}
@@ -472,8 +465,8 @@ export default function LaptopDetailPage() {
                 </p>
 
                 {orderError && (
-                  <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', borderRadius: '12px', padding: '12px 14px', fontSize: '0.85rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <AlertCircle size={16} color="#DC2626" />
+                  <div className="nh-error-box">
+                    <AlertCircle size={16} />
                     <span>{orderError}</span>
                   </div>
                 )}
@@ -482,7 +475,7 @@ export default function LaptopDetailPage() {
                   {/* Name & Phone Row */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                         <User size={13} /> {isAr ? 'الاسم الكامل *' : 'Nom & Prénom *'}
                       </label>
                       <input
@@ -490,12 +483,12 @@ export default function LaptopDetailPage() {
                         value={orderForm.name}
                         onChange={e => setOrderForm(p => ({ ...p, name: e.target.value }))}
                         placeholder="Ex : Mohamed Ahmed"
-                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', color: '#1e293b', fontSize: '0.9rem', outline: 'none' }}
+                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid var(--border-input)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '0.9rem', outline: 'none' }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                         <Phone size={13} /> {isAr ? 'رقم الهاتف *' : 'Téléphone *'}
                       </label>
                       <input
@@ -503,7 +496,7 @@ export default function LaptopDetailPage() {
                         value={orderForm.phone}
                         onChange={e => setOrderForm(p => ({ ...p, phone: e.target.value }))}
                         placeholder="Ex : 0550 12 34 56"
-                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', color: '#1e293b', fontSize: '0.9rem', outline: 'none' }}
+                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid var(--border-input)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '0.9rem', outline: 'none' }}
                       />
                     </div>
                   </div>
@@ -511,7 +504,7 @@ export default function LaptopDetailPage() {
                   {/* Quantity & Address Row */}
                   <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                         <ShoppingCart size={13} /> {isAr ? 'الكمية *' : 'Quantité *'}
                       </label>
                       <input
@@ -520,12 +513,12 @@ export default function LaptopDetailPage() {
                         max={laptop.stock || 1}
                         value={orderQuantity}
                         onChange={e => setOrderQuantity(Math.max(1, Math.min(laptop.stock || 1, Number(e.target.value))))}
-                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', color: '#1e293b', fontSize: '0.9rem', fontWeight: 800, outline: 'none' }}
+                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid var(--border-input)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 800, outline: 'none' }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                         <MapPin size={13} /> {isAr ? 'عنوان التوصيل والولاية' : 'Adresse de livraison & Wilaya *'}
                       </label>
                       <input
@@ -533,13 +526,13 @@ export default function LaptopDetailPage() {
                         value={orderForm.address}
                         onChange={e => setOrderForm(p => ({ ...p, address: e.target.value }))}
                         placeholder="Ex : Commune, Wilaya"
-                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', color: '#1e293b', fontSize: '0.9rem', outline: 'none' }}
+                        style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid var(--border-input)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '0.9rem', outline: 'none' }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                       <MessageSquare size={13} /> {isAr ? 'ملاحظات إضافية' : 'Remarques (Optionnel)'}
                     </label>
                     <textarea
@@ -547,7 +540,7 @@ export default function LaptopDetailPage() {
                       onChange={e => setOrderForm(p => ({ ...p, notes: e.target.value }))}
                       rows={2}
                       placeholder="Instructions spécifiques pour le livreur..."
-                      style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', color: '#1e293b', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
+                      style={{ width: '100%', padding: '11px 14px', borderRadius: '12px', border: '1.5px solid var(--border-input)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '0.9rem', outline: 'none', resize: 'vertical' }}
                     />
                   </div>
                 </div>
@@ -590,7 +583,7 @@ export default function LaptopDetailPage() {
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Livraison rapide</div>
-            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>24h - 48h dans 58 wilayas</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>24h - 48h dans 58 wilayas</div>
           </div>
         </div>
 
@@ -600,7 +593,7 @@ export default function LaptopDetailPage() {
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Paiement à la livraison</div>
-            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Payez à la réception du colis</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Payez à la réception du colis</div>
           </div>
         </div>
 
@@ -610,7 +603,7 @@ export default function LaptopDetailPage() {
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Produits 100% authentiques</div>
-            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Garantie constructeur incluse</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Garantie constructeur incluse</div>
           </div>
         </div>
 
@@ -620,7 +613,7 @@ export default function LaptopDetailPage() {
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Support expert</div>
-            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>7j/7 - Assistance technique</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>7j/7 - Assistance technique</div>
           </div>
         </div>
       </div>

@@ -47,9 +47,11 @@ import {
 import { PosCartModal } from '../../components/pos/PosCartModal';
 import type { CartProduct, PosSaleTransaction } from '../../components/pos/PosCartModal';
 import { ReturnSaleModal } from '../../components/pos/ReturnSaleModal';
+import { formatImageUrl, parseGalleryImagesText } from '../../lib/imageUtils';
 import { DraggablePosBubble } from '../../components/pos/DraggablePosBubble';
 import { getPublicWebsiteUrl } from '../../lib/config';
 import { usePosCartStore } from '../../store/posCartStore';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export interface LaptopItem {
   id: string;
@@ -83,6 +85,13 @@ const INITIAL_POS_TRANSACTIONS: PosSaleTransaction[] = [];
 
 export function VenteLaptopsPage() {
   const { language } = useAppStore();
+  const { can } = usePermissions();
+  const canCreate = can('laptops', 'create');
+  const canEdit = can('laptops', 'edit');
+  const canDelete = can('laptops', 'delete');
+  const canExport = can('laptops', 'export');
+  const canViewFinancials = can('laptops', 'financials');
+
   const isAr = language === 'ar';
   const isEn = language === 'en';
   const t = (fr: string, ar: string, en: string) => isAr ? ar : isEn ? en : fr;
@@ -109,12 +118,23 @@ export function VenteLaptopsPage() {
       if (!isMounted) return;
       const combinedMap = new Map<string, any>();
 
-      (txs || []).forEach((t: any) => combinedMap.set(t.id, t));
-      (invs || []).forEach((inv: any) => {
-        if (!combinedMap.has(inv.id)) combinedMap.set(inv.id, inv);
+      // Merge transactions with invoices (invoices take priority for status/refund updates!)
+      (invs || []).forEach((inv: any) => combinedMap.set(inv.id, inv));
+      (txs || []).forEach((t: any) => {
+        if (!combinedMap.has(t.id)) combinedMap.set(t.id, t);
       });
       (ords || []).forEach((ord: any) => {
-        if (ord.status !== 'cancelled' && !combinedMap.has(ord.id) && !combinedMap.has(`FACT-${ord.id.replace(/[^A-Za-z0-9]/g, '')}`)) {
+        const invMatch = (invs || []).find((inv: any) => inv.orderId === ord.id || inv.id === ord.id || inv.id === `FAC-WEB-${ord.id.replace(/^CMD-WEB-?/i, '')}`);
+        if (invMatch) return; // Managed via invoice!
+        if (ord.status === 'returned' || ord.isRefunded) {
+          combinedMap.set(ord.id, {
+            id: ord.id,
+            status: 'Retourné',
+            isRefunded: true,
+            items: ord.items || [],
+            totalPrice: ord.totalAmount || 0,
+          });
+        } else if (ord.status !== 'cancelled' && !combinedMap.has(ord.id)) {
           combinedMap.set(ord.id, {
             id: ord.id,
             status: ord.status === 'delivered' ? 'Payée' : 'En livraison',
@@ -194,8 +214,7 @@ export function VenteLaptopsPage() {
 
     let totalNetProfit = 0;
     for (const t of transactions) {
-      if (t.status === 'Annulée' || t.status === 'cancelled') continue;
-      if (t.status === 'Retourné' && (!t.returnedItems || t.returnedItems.length === 0)) continue;
+      if ((t.status as string) === 'Annulée' || (t.status as string) === 'cancelled' || (t.status as string) === 'Retourné' || (t as any).isRefunded) continue;
 
       const laptopItems = (t.items || []).filter((i: any) =>
         i.productType === 'laptop' || laptops.some(l => l.id === i.productId)
@@ -355,13 +374,12 @@ export function VenteLaptopsPage() {
   const handleSave = () => {
     if (!formData.name.fr || !formData.price) return;
 
-    const parsedGallery = (formData.galleryImagesText || '')
-      .split('\n')
-      .map(s => s.trim())
-      .filter(Boolean);
+    const normalizedImage = formatImageUrl(formData.image);
+    const parsedGallery = parseGalleryImagesText(formData.galleryImagesText);
 
     const payload = {
       ...formData,
+      image: normalizedImage,
       galleryImages: parsedGallery
     };
 
@@ -471,14 +489,18 @@ export function VenteLaptopsPage() {
         </div>
 
         <div className="top-right-actions">
-          <button className="btn btn-secondary export-btn" type="button" onClick={handleExportExcel}>
-            <Download size={16} />
-            <span>{t('Exporter', 'تصدير', 'Export')}</span>
-          </button>
-          <button className="btn btn-primary add-btn" type="button" onClick={() => { setEditingLaptop(null); setFormData({ name: { fr: '', ar: '' }, brand: '', category: '' as any, purchasePrice: 0, price: 0, stock: 1, minStockAlert: 1, specs: { cpu: '', ram: '', ssd: '', gpu: '', screen: '' }, condition: 'Neuf' as const, warrantyMonths: 12, image: '', galleryImages: [], galleryImagesText: '', videoUrl: '', publishedOnWebsite: true }); setShowAddModal(true); }}>
-            <Plus size={18} />
-            <span>{t('Ajouter au stock', 'إضافة للمخزون', 'Add to Stock')}</span>
-          </button>
+          {canExport && (
+            <button className="btn btn-secondary export-btn" type="button" onClick={handleExportExcel}>
+              <Download size={16} />
+              <span>{t('Exporter', 'تصدير', 'Export')}</span>
+            </button>
+          )}
+          {canCreate && (
+            <button className="btn btn-primary add-btn" type="button" onClick={() => { setEditingLaptop(null); setFormData({ name: { fr: '', ar: '' }, brand: '', category: '' as any, purchasePrice: 0, price: 0, stock: 1, minStockAlert: 1, specs: { cpu: '', ram: '', ssd: '', gpu: '', screen: '' }, condition: 'Neuf' as const, warrantyMonths: 12, image: '', galleryImages: [], galleryImagesText: '', videoUrl: '', publishedOnWebsite: true }); setShowAddModal(true); }}>
+              <Plus size={18} />
+              <span>{t('Ajouter au stock', 'إضافة للمخزون', 'Add to Stock')}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -509,7 +531,7 @@ export function VenteLaptopsPage() {
           <div className="kpi-icon-circle purple"><DollarSign size={22} color="#ffffff" /></div>
           <div className="kpi-details">
             <span className="kpi-title">{t('Valeur du Stock', 'قيمة المخزون', 'Stock Valuation')}</span>
-            <h3 className="kpi-number">{stats.totalStockVal.toLocaleString()} DZD</h3>
+            <h3 className="kpi-number">{canViewFinancials ? `${stats.totalStockVal.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-subtext">{t('Valeur globale du stock', 'إجمالي قيمة المخزون', 'Total stock value')}</span>
           </div>
         </div>
@@ -536,7 +558,7 @@ export function VenteLaptopsPage() {
           <div className="kpi-icon-circle emerald"><TrendingUp size={22} color="#ffffff" /></div>
           <div className="kpi-details">
             <span className="kpi-title">{t('Bénéfice Net Total', 'إجمالي الأرباح الصافية', 'Total Net Profit')}</span>
-            <h3 className="kpi-number profit-num">+{stats.totalNetProfit.toLocaleString()} DZD</h3>
+            <h3 className="kpi-number profit-num">{canViewFinancials ? `+${stats.totalNetProfit.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-subtext profit-sub">{t('Marge réelle calculée', 'الأرباح الصافية المحققة', 'Net profit earned')}</span>
           </div>
         </div>
@@ -605,7 +627,9 @@ export function VenteLaptopsPage() {
                         type="button"
                         className={`web-pill-toggle ${laptop.publishedOnWebsite ? 'on-web' : 'off-web'}`}
                         title={laptop.publishedOnWebsite ? t('Visible sur le site — cliquer pour masquer', 'ظاهر على الموقع — انقر للإخفاء', 'Visible on site — click to hide') : t('Masqué du site — cliquer pour publier', 'مخفي من الموقع — انقر للنشر', 'Hidden from site — click to publish')}
+                        disabled={!canEdit}
                         onClick={() => {
+                          if (!canEdit) return;
                           const newValue = !laptop.publishedOnWebsite;
                           setLaptops(prev => prev.map(l => l.id === laptop.id ? { ...l, publishedOnWebsite: newValue } : l));
                           update('laptops', laptop.id, { publishedOnWebsite: newValue }).catch(err => console.warn('Web toggle save:', err));
@@ -617,7 +641,7 @@ export function VenteLaptopsPage() {
                     </div>
 
                     <div className="laptop-image-wrapper">
-                      <img src={laptop.image || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'} alt={laptop.name.fr} />
+                      <img src={formatImageUrl(laptop.image) || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'} alt={laptop.name.fr} />
                     </div>
 
                     <div className="laptop-card-content">
@@ -630,12 +654,16 @@ export function VenteLaptopsPage() {
                       <div className="laptop-price-row-financial">
                         <div className="prices-column">
                           <span className="price-sell">{laptop.price.toLocaleString()} DZD</span>
-                          <span className="price-cost">{t('Coût', 'التكلفة', 'Cost')}: {unitCost.toLocaleString()} DZD</span>
+                          {canViewFinancials && (
+                            <span className="price-cost">{t('Coût', 'التكلفة', 'Cost')}: {unitCost.toLocaleString()} DZD</span>
+                          )}
                         </div>
-                        <div className="profit-badge-pill">
-                          <TrendingUp size={11} />
-                          <span>+{unitProfit.toLocaleString()} DZD</span>
-                        </div>
+                        {canViewFinancials && (
+                          <div className="profit-badge-pill">
+                            <TrendingUp size={11} />
+                            <span>+{unitProfit.toLocaleString()} DZD</span>
+                          </div>
+                        )}
                       </div>
 
                       <button
@@ -668,24 +696,30 @@ export function VenteLaptopsPage() {
                           <Link2 size={14} />
                           <span>{t('Lien Web', 'نسخ الرابط', 'Web Link')}</span>
                         </button>
-                        <button
-                          type="button"
-                          className="btn-card-action btn-edit"
-                          onClick={() => handleOpenEdit(laptop)}
-                          title={t('Modifier', 'تعديل', 'Edit')}
-                        >
-                          <Edit2 size={14} />
-                          <span>{t('Modifier', 'تعديل', 'Edit')}</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-card-action btn-delete"
-                          onClick={() => handleDeleteLaptop(laptop)}
-                          title={t('Supprimer', 'حذف', 'Delete')}
-                        >
-                          <Trash2 size={14} />
-                          <span>{t('Supprimer', 'حذف', 'Delete')}</span>
-                        </button>
+
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="btn-card-action btn-edit"
+                            onClick={() => handleOpenEdit(laptop)}
+                            title={t('Modifier', 'تعديل', 'Edit')}
+                          >
+                            <Edit2 size={14} />
+                            <span>{t('Modifier', 'تعديل', 'Edit')}</span>
+                          </button>
+                        )}
+
+                        {canDelete && (
+                          <button
+                            type="button"
+                            className="btn-card-action btn-delete"
+                            onClick={() => handleDeleteLaptop(laptop)}
+                            title={t('Supprimer', 'حذف', 'Delete')}
+                          >
+                            <Trash2 size={14} />
+                            <span>{t('Supprimer', 'حذف', 'Delete')}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -720,7 +754,7 @@ export function VenteLaptopsPage() {
                 </div>
 
                 <div className="laptop-image-wrapper grayscale">
-                  <img src={laptop.image || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'} alt={laptop.name.fr} />
+                  <img src={formatImageUrl(laptop.image) || 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'} alt={laptop.name.fr} />
                 </div>
 
                 <div className="laptop-card-content">
@@ -806,7 +840,14 @@ export function VenteLaptopsPage() {
               <div className="form-row-2">
                 <div className="form-group">
                   <label><DollarSign size={14} /> Prix d'achat (DZD) *</label>
-                  <input className="modal-input" type="number" value={formData.purchasePrice || ''} onChange={e => setFormData(f => ({...f, purchasePrice: Number(e.target.value)}))} />
+                  <input
+                    className="modal-input"
+                    type={canViewFinancials ? "number" : "password"}
+                    disabled={!canViewFinancials}
+                    placeholder={canViewFinancials ? "" : "🔒 Accès restreint"}
+                    value={canViewFinancials ? (formData.purchasePrice || '') : '****'}
+                    onChange={e => canViewFinancials && setFormData(f => ({...f, purchasePrice: Number(e.target.value)}))}
+                  />
                 </div>
                 <div className="form-group">
                   <label><DollarSign size={14} /> Prix de vente (DZD) *</label>

@@ -89,7 +89,7 @@ export function SmartAlertsModal({ alerts, language, onClose, onDismiss }: Smart
                                     <div className="alert-content">
                                         <div className="alert-header">
                                             <span className="alert-title">
-                                                {alert.title[language]}
+                                                {(alert.title as any)[language] || alert.title.fr}
                                             </span>
                                             <div className="alert-header-right">
                                                 <span className="alert-date">
@@ -115,7 +115,7 @@ export function SmartAlertsModal({ alerts, language, onClose, onDismiss }: Smart
                                             </div>
                                         </div>
                                         <div className="alert-description">
-                                            {alert.description[language]}
+                                            {(alert.description as any)[language] || alert.description.fr}
                                         </div>
                                     </div>
                                 </a>

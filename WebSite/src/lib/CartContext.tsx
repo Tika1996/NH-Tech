@@ -60,7 +60,7 @@ export function triggerFlyToCartAnimation(
     width: '56px',
     height: '56px',
     borderRadius: '16px',
-    background: '#ffffff',
+    background: 'var(--bg-card)',
     boxShadow: '0 12px 35px rgba(0, 87, 255, 0.45), 0 0 0 2px #0057FF',
     zIndex: '999999',
     pointerEvents: 'none',

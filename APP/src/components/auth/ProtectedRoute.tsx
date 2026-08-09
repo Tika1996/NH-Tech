@@ -3,17 +3,23 @@ import { useAppStore } from '../../store/appStore';
 import { useEffect, useState } from 'react';
 import { onAuthChange, staffCollection, signOut } from '../../lib/firebase';
 
+import { userHasModuleAccess } from '../../lib/rolesStore';
+import { getOfflineUserByEmailOrUid } from '../../lib/offlineAuth';
+import { isAppConfigured } from '../../lib/config';
+import type { ModuleKey } from '../../types/permissions';
+
 interface ProtectedRouteProps {
     children: React.ReactNode;
     requiredRoles?: string[];
+    requiredModule?: ModuleKey;
 }
 
 /**
  * ProtectedRoute component that wraps routes requiring authentication.
  * Redirects to /login if user is not authenticated.
- * Optionally checks for required roles.
+ * Optionally checks for required roles or module permissions.
  */
-export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRoles, requiredModule }: ProtectedRouteProps) {
     const { isAuthenticated, currentUser, setAuthenticated, setCurrentUser } = useAppStore();
     // If already authenticated in store, don't block navigation with loading spinner
     const [isLoading, setIsLoading] = useState(() => !useAppStore.getState().isAuthenticated);
@@ -27,11 +33,16 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
                     let staffDoc = await staffCollection.getByAuthUidOrEmail(user.uid, user.email || undefined);
 
                     if (!staffDoc) {
+                        const offlineUser = getOfflineUserByEmailOrUid(user.email || undefined, user.uid);
+                        const allExistingStaff = await staffCollection.getAll(false);
+                        const isFirstUserEver = allExistingStaff.length === 0;
+                        const determinedRole = offlineUser?.role || (isFirstUserEver ? 'admin' : 'staff');
+
                         try {
                             const newId = await staffCollection.create({
-                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Admin'),
+                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Employé'),
                                 email: user.email || '',
-                                role: 'admin',
+                                role: determinedRole,
                                 authUid: user.uid,
                                 isActive: true,
                                 createdAt: new Date(),
@@ -39,18 +50,18 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
                             });
                             staffDoc = {
                                 id: newId,
-                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Admin'),
+                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Employé'),
                                 email: user.email || '',
-                                role: 'admin',
+                                role: determinedRole,
                                 authUid: user.uid,
                                 isActive: true
                             } as any;
                         } catch (e) {
                             staffDoc = {
                                 id: `staff_${user.uid}`,
-                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Admin'),
+                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Employé'),
                                 email: user.email || '',
-                                role: 'admin',
+                                role: determinedRole,
                                 isActive: true
                             } as any;
                         }
@@ -74,7 +85,7 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
                     }
 
                     setAuthenticated(true);
-                    const userRole = activeStaff?.role || 'admin';
+                    const userRole = activeStaff?.role || 'staff';
 
                     setCurrentUser({
                         id: activeStaff?.id || user.uid,
@@ -122,7 +133,7 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
             animation: spin 0.8s linear infinite;
           }
           @keyframes spin {
-            to { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
           }
         `}</style>
             </div>
@@ -132,6 +143,13 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
     // Not authenticated - redirect to login
     if (!isAuthenticated || !currentUser) {
         return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // Check dynamic module access permission
+    if (requiredModule && currentUser.role !== 'admin') {
+        if (!userHasModuleAccess(currentUser.id, currentUser.role, requiredModule)) {
+            return <Navigate to="/" replace />;
+        }
     }
 
     // Check role-based access if required
@@ -152,6 +170,10 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
 export function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAppStore();
     const location = useLocation();
+
+    if (!isAppConfigured()) {
+        return <Navigate to="/setup" replace />;
+    }
 
     if (isAuthenticated) {
         // Redirect to the page they came from, or dashboard

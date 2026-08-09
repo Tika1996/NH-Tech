@@ -38,9 +38,11 @@ import {
 import { PosCartModal } from '../../components/pos/PosCartModal';
 import type { CartProduct, PosSaleTransaction } from '../../components/pos/PosCartModal';
 import { ReturnSaleModal } from '../../components/pos/ReturnSaleModal';
+import { formatImageUrl, parseGalleryImagesText } from '../../lib/imageUtils';
 import { DraggablePosBubble } from '../../components/pos/DraggablePosBubble';
 import { getPublicWebsiteUrl } from '../../lib/config';
 import { usePosCartStore } from '../../store/posCartStore';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export interface PieceStockItem {
   id: string;
@@ -68,6 +70,13 @@ const INITIAL_PIECE_TRANSACTIONS: PosSaleTransaction[] = [];
 
 export function VentePiecesPage() {
   const { language } = useAppStore();
+  const { can } = usePermissions();
+  const canCreate = can('pieces', 'create');
+  const canEdit = can('pieces', 'edit');
+  const canDelete = can('pieces', 'delete');
+  const canExport = can('pieces', 'export');
+  const canViewFinancials = can('pieces', 'financials');
+
   const isAr = language === 'ar';
   const isEn = language === 'en';
   const t = (fr: string, ar: string, en: string) => isAr ? ar : isEn ? en : fr;
@@ -94,12 +103,23 @@ export function VentePiecesPage() {
       if (!isMounted) return;
       const combinedMap = new Map<string, any>();
 
-      (txs || []).forEach((t: any) => combinedMap.set(t.id, t));
-      (invs || []).forEach((inv: any) => {
-        if (!combinedMap.has(inv.id)) combinedMap.set(inv.id, inv);
+      // Merge transactions with invoices (invoices take priority for status/refund updates!)
+      (invs || []).forEach((inv: any) => combinedMap.set(inv.id, inv));
+      (txs || []).forEach((t: any) => {
+        if (!combinedMap.has(t.id)) combinedMap.set(t.id, t);
       });
       (ords || []).forEach((ord: any) => {
-        if (ord.status !== 'cancelled' && !combinedMap.has(ord.id) && !combinedMap.has(`FACT-${ord.id.replace(/[^A-Za-z0-9]/g, '')}`)) {
+        const invMatch = (invs || []).find((inv: any) => inv.orderId === ord.id || inv.id === ord.id || inv.id === `FAC-WEB-${ord.id.replace(/^CMD-WEB-?/i, '')}`);
+        if (invMatch) return; // Managed via invoice!
+        if (ord.status === 'returned' || ord.isRefunded) {
+          combinedMap.set(ord.id, {
+            id: ord.id,
+            status: 'Retourné',
+            isRefunded: true,
+            items: ord.items || [],
+            totalPrice: ord.totalAmount || 0,
+          });
+        } else if (ord.status !== 'cancelled' && !combinedMap.has(ord.id)) {
           combinedMap.set(ord.id, {
             id: ord.id,
             status: ord.status === 'delivered' ? 'Payée' : 'En livraison',
@@ -189,13 +209,12 @@ export function VentePiecesPage() {
     if (!pieceForm.name.trim() || !pieceForm.price) return;
     const catLabel = categoryOptions.find(c => c.value === pieceForm.category)?.label || pieceForm.categoryLabel;
 
-    const parsedGallery = (pieceForm.galleryImagesText || '')
-      .split('\n')
-      .map(s => s.trim())
-      .filter(Boolean);
+    const normalizedImage = formatImageUrl(pieceForm.image);
+    const parsedGallery = parseGalleryImagesText(pieceForm.galleryImagesText);
 
     const payload = {
       ...pieceForm,
+      image: normalizedImage,
       galleryImages: parsedGallery
     };
 
@@ -249,12 +268,11 @@ export function VentePiecesPage() {
   }, [piecesStock]);
 
   const metrics = useMemo(() => {
-    const todaySales = transactions.filter(s => s.status === 'Payée' || s.status === 'Livrée' || s.status === 'En livraison').reduce((sum, s) => sum + (s.totalPrice || 0), 0);
+    const todaySales = transactions.filter(s => (s.status as string) === 'Payée' || (s.status as string) === 'Livrée' || (s.status as string) === 'En livraison').reduce((sum, s) => sum + (s.totalPrice || 0), 0);
 
     let totalNetProfit = 0;
     for (const t of transactions) {
-      if (t.status === 'Annulée' || t.status === 'cancelled') continue;
-      if (t.status === 'Retourné' && (!t.returnedItems || t.returnedItems.length === 0)) continue;
+      if ((t.status as string) === 'Annulée' || (t.status as string) === 'cancelled' || (t.status as string) === 'Retourné' || (t as any).isRefunded) continue;
 
       const pieceItems = (t.items || []).filter((i: any) =>
         i.productType === 'piece' || piecesStock.some(p => p.id === i.productId)
@@ -445,14 +463,18 @@ export function VentePiecesPage() {
         </div>
 
         <div className="top-right-actions">
-          <button className="btn btn-secondary export-btn" type="button" onClick={handleExportExcel}>
-            <Download size={16} />
-            <span>{t('Exporter', 'تصدير', 'Export')}</span>
-          </button>
-          <button className="btn btn-primary add-btn" type="button" onClick={openAddPieceModal}>
-            <Plus size={18} />
-            <span>{t('Ajouter au stock', 'إضافة للمخزون', 'Add to Stock')}</span>
-          </button>
+          {canExport && (
+            <button className="btn btn-secondary export-btn" type="button" onClick={handleExportExcel}>
+              <Download size={16} />
+              <span>{t('Exporter', 'تصدير', 'Export')}</span>
+            </button>
+          )}
+          {canCreate && (
+            <button className="btn btn-primary add-btn" type="button" onClick={openAddPieceModal}>
+              <Plus size={18} />
+              <span>{t('Ajouter au stock', 'إضافة للمخزون', 'Add to Stock')}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -483,7 +505,7 @@ export function VentePiecesPage() {
           <div className="kpi-icon-circle purple"><DollarSign size={22} color="#ffffff" /></div>
           <div className="kpi-details">
             <span className="kpi-title">{t('Valeur du Stock', 'قيمة المخزون', 'Stock Valuation')}</span>
-            <h3 className="kpi-number">{metrics.totalStockVal.toLocaleString()} DZD</h3>
+            <h3 className="kpi-number">{canViewFinancials ? `${metrics.totalStockVal.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-subtext">{t('Valeur globale du stock pièces', 'إجمالي قيمة قطع الغيار', 'Total parts stock value')}</span>
           </div>
         </div>
@@ -510,7 +532,7 @@ export function VentePiecesPage() {
           <div className="kpi-icon-circle emerald"><TrendingUp size={22} color="#ffffff" /></div>
           <div className="kpi-details">
             <span className="kpi-title">{t('Bénéfice Net Total', 'إجمالي الأرباح الصافية', 'Total Net Profit')}</span>
-            <h3 className="kpi-number profit-num">+{metrics.totalNetProfit.toLocaleString()} DZD</h3>
+            <h3 className="kpi-number profit-num">{canViewFinancials ? `+${metrics.totalNetProfit.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-subtext profit-sub">{t('Marge réelle calculée', 'الأرباح الصافية المحققة', 'Net profit earned')}</span>
           </div>
         </div>
@@ -571,7 +593,9 @@ export function VentePiecesPage() {
                         type="button"
                         className={`web-pill-toggle ${piece.publishedOnWebsite ? 'on-web' : 'off-web'}`}
                         title={piece.publishedOnWebsite ? t('Visible sur le site — cliquer pour masquer', 'ظاهر على الموقع — انقر للإخفاء', 'Visible on site — click to hide') : t('Masqué du site — cliquer pour publier', 'مخفي من الموقع — انقر للنشر', 'Hidden from site — click to publish')}
+                        disabled={!canEdit}
                         onClick={() => {
+                          if (!canEdit) return;
                           const newValue = !piece.publishedOnWebsite;
                           setPiecesStock(prev => prev.map(p => p.id === piece.id ? { ...p, publishedOnWebsite: newValue } : p));
                           update('pieces', piece.id, { publishedOnWebsite: newValue }).catch(err => console.warn('Web toggle save:', err));
@@ -583,7 +607,7 @@ export function VentePiecesPage() {
                     </div>
 
                     <div className="piece-image-wrapper">
-                      <img src={piece.image || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=300'} alt={piece.name} />
+                      <img src={formatImageUrl(piece.image) || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=300'} alt={piece.name} />
                     </div>
 
                     <div className="piece-card-content">
@@ -593,12 +617,16 @@ export function VentePiecesPage() {
                       <div className="laptop-price-row-financial">
                         <div className="prices-column">
                           <span className="price-sell">{piece.price.toLocaleString()} DZD</span>
-                          <span className="price-cost">{t('Coût', 'التكلفة', 'Cost')}: {unitCost.toLocaleString()} DZD</span>
+                          {canViewFinancials && (
+                            <span className="price-cost">{t('Coût', 'التكلفة', 'Cost')}: {unitCost.toLocaleString()} DZD</span>
+                          )}
                         </div>
-                        <div className="profit-badge-pill">
-                          <TrendingUp size={11} />
-                          <span>+{unitProfit.toLocaleString()} DZD</span>
-                        </div>
+                        {canViewFinancials && (
+                          <div className="profit-badge-pill">
+                            <TrendingUp size={11} />
+                            <span>+{unitProfit.toLocaleString()} DZD</span>
+                          </div>
+                        )}
                       </div>
 
                       <button
@@ -631,24 +659,28 @@ export function VentePiecesPage() {
                           <Link2 size={14} />
                           <span>{t('Lien Web', 'نسخ الرابط', 'Web Link')}</span>
                         </button>
-                        <button
-                          type="button"
-                          className="btn-card-action btn-edit"
-                          onClick={() => openEditPieceModal(piece)}
-                          title={t('Modifier', 'تعديل', 'Edit')}
-                        >
-                          <Edit2 size={14} />
-                          <span>{t('Modifier', 'تعديل', 'Edit')}</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-card-action btn-delete"
-                          onClick={() => handleDeletePiece(piece)}
-                          title={t('Supprimer', 'حذف', 'Delete')}
-                        >
-                          <Trash2 size={14} />
-                          <span>{t('Supprimer', 'حذف', 'Delete')}</span>
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="btn-card-action btn-edit"
+                            onClick={() => openEditPieceModal(piece)}
+                            title={t('Modifier', 'تعديل', 'Edit')}
+                          >
+                            <Edit2 size={14} />
+                            <span>{t('Modifier', 'تعديل', 'Edit')}</span>
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            className="btn-card-action btn-delete"
+                            onClick={() => handleDeletePiece(piece)}
+                            title={t('Supprimer', 'حذف', 'Delete')}
+                          >
+                            <Trash2 size={14} />
+                            <span>{t('Supprimer', 'حذف', 'Delete')}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -683,7 +715,7 @@ export function VentePiecesPage() {
                 </div>
 
                 <div className="laptop-image-wrapper grayscale">
-                  <img src={piece.image || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=300'} alt={piece.name} />
+                  <img src={formatImageUrl(piece.image) || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=300'} alt={piece.name} />
                 </div>
 
                 <div className="piece-card-content">
@@ -785,7 +817,14 @@ export function VentePiecesPage() {
               <div className="form-row-2">
                 <div className="form-group">
                   <label><DollarSign size={14} /> Prix d'achat (DZD) *</label>
-                  <input className="input-field" type="number" value={pieceForm.purchasePrice || ''} onChange={e => setPieceForm(f => ({...f, purchasePrice: Number(e.target.value)}))} />
+                  <input
+                    className="input-field"
+                    type={canViewFinancials ? "number" : "password"}
+                    disabled={!canViewFinancials}
+                    placeholder={canViewFinancials ? "" : "**** DZD"}
+                    value={canViewFinancials ? (pieceForm.purchasePrice || '') : '****'}
+                    onChange={e => canViewFinancials && setPieceForm(f => ({...f, purchasePrice: Number(e.target.value)}))}
+                  />
                 </div>
                 <div className="form-group">
                   <label><DollarSign size={14} /> Prix de vente (DZD) *</label>

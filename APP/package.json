@@ -59,7 +59,7 @@
   },
   "build": {
     "appId": "com.nhtech.gestion",
-    "productName": "NH TECH Gestion",
+    "productName": "NH TECH Manager",
     "files": [
       "dist/**",
       "build/**",

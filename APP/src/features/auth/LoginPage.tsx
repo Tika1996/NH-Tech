@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn, staffCollection, resetPassword, signOut } from '../../lib/firebase';
-import { isFirebaseConfigured } from '../../lib/config';
+import { isFirebaseConfigured, isAppConfigured } from '../../lib/config';
 import { BRAND } from '../../lib/brand';
 import { useAppStore } from '../../store/appStore';
+import { getOfflineUserByEmailOrUid } from '../../lib/offlineAuth';
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle, Mail, Lock, ShieldCheck, RefreshCw, ChevronRight } from 'lucide-react';
 
 const logoUrl = import.meta.env.BASE_URL + 'logo.png';
@@ -59,6 +60,13 @@ export function LoginPage() {
   const { language, setUser } = useAppStore();
   const isAr = language === 'ar';
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAppConfigured()) {
+      navigate('/setup', { replace: true });
+    }
+  }, [navigate]);
+
   const t = translations[isAr ? 'ar' : 'fr'];
 
   const [email, setEmail] = useState('');
@@ -268,11 +276,16 @@ export function LoginPage() {
       // Auto-provision staff profile if missing in DB for valid Firebase user
       if (!staffDoc) {
         console.log('[LOGIN] Staff record missing in DB for Firebase user, auto-creating profile...');
+        const offlineUser = getOfflineUserByEmailOrUid(userEmail, uid);
+        const allExistingStaff = await staffCollection.getAll(false);
+        const isFirstUserEver = allExistingStaff.length === 0;
+        const determinedRole = offlineUser?.role || (isFirstUserEver ? 'admin' : 'staff');
+
         try {
           const newId = await staffCollection.create({
-            name: displayName || userEmail.split('@')[0],
+            name: displayName || (userEmail ? userEmail.split('@')[0] : 'Employé'),
             email: userEmail,
-            role: 'admin', // Default to admin for initial Firebase user
+            role: determinedRole,
             authUid: uid,
             isActive: true,
             createdAt: new Date(),
@@ -280,26 +293,22 @@ export function LoginPage() {
           });
           staffDoc = {
             id: newId,
-            name: displayName || userEmail.split('@')[0],
+            name: displayName || (userEmail ? userEmail.split('@')[0] : 'Employé'),
             email: userEmail,
-            role: 'admin',
+            role: determinedRole,
             authUid: uid,
             isActive: true
           } as any;
         } catch (createErr) {
           console.warn('[LOGIN] Auto-provisioning failed:', createErr);
+          staffDoc = {
+            id: `staff_${uid}`,
+            name: displayName || (userEmail ? userEmail.split('@')[0] : 'Employé'),
+            email: userEmail,
+            role: determinedRole,
+            isActive: true
+          } as any;
         }
-      }
-
-      if (!staffDoc) {
-        // Fallback profile if DB creation fails
-        staffDoc = {
-          id: `staff_${uid}`,
-          name: displayName || userEmail.split('@')[0],
-          email: userEmail,
-          role: 'admin',
-          isActive: true
-        } as any;
       }
 
       const currentStaff = staffDoc as any;

@@ -106,11 +106,31 @@ export const loadFirebaseConfig = (): FirebaseConfig => {
 
 export const firebaseConfig = loadFirebaseConfig();
 
+export const SETUP_COMPLETED_STORAGE_KEY = `${BRAND.storagePrefix}_setup_completed`;
+
 export const isFirebaseConfigured = () => {
     return !!(firebaseConfig.apiKey &&
         firebaseConfig.apiKey !== 'YOUR_API_KEY' &&
         firebaseConfig.projectId &&
         firebaseConfig.projectId !== 'YOUR_PROJECT_ID');
+};
+
+export const isAppConfigured = (): boolean => {
+    if (isFirebaseConfigured()) return true;
+
+    if (localStorage.getItem(SETUP_COMPLETED_STORAGE_KEY) === 'true') return true;
+
+    try {
+        const offlineCreds = localStorage.getItem(`${BRAND.storagePrefix}_offline_credentials`);
+        if (offlineCreds) {
+            const parsed = JSON.parse(offlineCreds);
+            if (parsed && Object.keys(parsed).length > 0) return true;
+        }
+    } catch (e) {
+        /* ignore */
+    }
+
+    return false;
 };
 
 export const getPublicWebsiteUrl = (): string => {

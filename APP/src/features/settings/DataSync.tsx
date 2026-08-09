@@ -14,6 +14,30 @@ export const DataSync: React.FC = () => {
         measurementId: ''
     });
 
+    const [showWipeModal, setShowWipeModal] = useState(false);
+    const [wipeConfirmText, setWipeConfirmText] = useState('');
+    const [isWiping, setIsWiping] = useState(false);
+
+    const handleExecuteWipe = async () => {
+        if (wipeConfirmText.trim().toUpperCase() !== 'SUPPRIMER') return;
+        setIsWiping(true);
+        try {
+            const { executeGlobalDataWipe } = await import('../../lib/firebaseOps');
+            const res = await executeGlobalDataWipe();
+            if (res.success) {
+                alert('Toutes les données ont été supprimées avec succès sur le Cloud et sur tous les appareils !');
+                window.location.reload();
+            } else {
+                alert('Erreur lors de la suppression : ' + (res.error || 'Erreur inconnue'));
+            }
+        } catch (err: any) {
+            alert('Erreur : ' + err.message);
+        } finally {
+            setIsWiping(false);
+            setShowWipeModal(false);
+        }
+    };
+
     useEffect(() => {
         if (isConfigured) {
             const current = loadFirebaseConfig();
@@ -205,6 +229,82 @@ export const DataSync: React.FC = () => {
                     </button>
                 )}
             </div>
+
+            {/* Danger Zone: Global Reset All Data */}
+            <div className="danger-zone-card" style={{ marginTop: '28px', padding: '20px', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.35)', background: 'rgba(239, 68, 68, 0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <AlertTriangle color="#ef4444" size={22} />
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#ef4444' }}>
+                        Zone de Danger — Suppression Totale de la Base de Données
+                    </h3>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                    Efface définitivement <strong>TOUTES les données</strong> (laptops, pièces, factures, commandes, clients, etc.) du Cloud ET de la mémoire locale de <strong>TOUS vos appareils connectés à la fois</strong>.
+                </p>
+                <button
+                    type="button"
+                    onClick={() => { setWipeConfirmText(''); setShowWipeModal(true); }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', background: '#ef4444', border: 'none', borderRadius: '10px', color: '#ffffff', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}
+                >
+                    <Trash2 size={16} />
+                    <span>Supprimer Toutes les Données (Sur Tous les Appareils)</span>
+                </button>
+            </div>
+
+            {/* Wipe Modal Confirmation */}
+            {showWipeModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '20px' }} onClick={() => setShowWipeModal(false)}>
+                    <div style={{ background: 'var(--bg-elevated, #111)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '24px', boxShadow: '0 25px 50px rgba(0,0,0,0.6)' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ef4444', marginBottom: '14px' }}>
+                            <AlertTriangle size={26} />
+                            <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Confirmation de Suppression Totale</h2>
+                        </div>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: '16px' }}>
+                            ⚠️ <strong>ATTENTION : Action Irréversible !</strong><br />
+                            Vous êtes sur le point de supprimer l'intégralité du stock, des factures, des commandes et des clients. Toutes ces données seront également effacées automatiquement sur vos autres téléphones et PC.
+                        </p>
+                        <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                            Pour confirmer la suppression globale, tapez <span style={{ color: '#ef4444', fontWeight: 800 }}>SUPPRIMER</span> ci-dessous :
+                        </label>
+                        <input
+                            type="text"
+                            value={wipeConfirmText}
+                            onChange={e => setWipeConfirmText(e.target.value)}
+                            placeholder="SUPPRIMER"
+                            style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-secondary)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '1rem', fontWeight: 700, outline: 'none', marginBottom: '20px', boxSizing: 'border-box' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowWipeModal(false)}
+                                style={{ padding: '10px 18px', borderRadius: '10px', background: 'transparent', border: '1px solid var(--border-secondary)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                type="button"
+                                disabled={wipeConfirmText.trim().toUpperCase() !== 'SUPPRIMER' || isWiping}
+                                onClick={handleExecuteWipe}
+                                style={{
+                                    padding: '10px 22px',
+                                    borderRadius: '10px',
+                                    background: wipeConfirmText.trim().toUpperCase() === 'SUPPRIMER' ? '#ef4444' : 'rgba(239, 68, 68, 0.3)',
+                                    border: 'none',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                    cursor: wipeConfirmText.trim().toUpperCase() === 'SUPPRIMER' ? 'pointer' : 'not-allowed',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                <Trash2 size={16} />
+                                <span>{isWiping ? 'Suppression en cours...' : 'Oui, Tout Supprimer Maintenant'}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style>{`
               .data-sync-status {

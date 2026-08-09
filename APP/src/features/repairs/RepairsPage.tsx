@@ -29,6 +29,7 @@ import {
 import { repairsCollection, type RepairDossier, type RepairStatus } from '../../lib/firebase';
 import { NewDepositModal } from './NewDepositModal';
 import { RepairDetailModal } from './RepairDetailModal';
+import { usePermissions } from '../../hooks/usePermissions';
 import './repairs.css';
 
 // Status labels & styles matching FacturesPage status-pill
@@ -55,6 +56,13 @@ type StatusFilter = 'all' | 'active' | RepairStatus;
 
 export function RepairsPage() {
   const { language } = useAppStore();
+  const { can } = usePermissions();
+  const canCreate = can('reparations', 'create');
+  const canEdit = can('reparations', 'edit');
+  const canDelete = can('reparations', 'delete');
+  const canExport = can('reparations', 'export');
+  const canViewFinancials = can('reparations', 'financials');
+
   const isAr = language === 'ar';
   const isEn = language === 'en';
   const t = (fr: string, ar: string, en?: string) => isAr ? ar : (isEn && en ? en : fr);
@@ -156,14 +164,16 @@ export function RepairsPage() {
           >
             {loading ? <Loader2 size={16} className="spin" /> : <RefreshCw size={16} />}
           </button>
-          <button
-            className="btn-primary-action"
-            type="button"
-            onClick={() => setShowNewDeposit(true)}
-          >
-            <Plus size={18} />
-            <span>{t('Nouveau Dépôt SAV', 'إيداع جهاز جديد', 'New SAV Deposit')}</span>
-          </button>
+          {canCreate && (
+            <button
+              className="btn-primary-action"
+              type="button"
+              onClick={() => setShowNewDeposit(true)}
+            >
+              <Plus size={18} />
+              <span>{t('Nouveau Dépôt SAV', 'إيداع جهاز جديد', 'New SAV Deposit')}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -191,7 +201,7 @@ export function RepairsPage() {
           <div className="kpi-icon emerald"><TrendingUp size={22} color="#ffffff" /></div>
           <div className="kpi-info">
             <span className="kpi-label">{t('Revenus SAV', 'مداخيل الصيانة', 'SAV Revenue')}</span>
-            <h3 className="kpi-value profit-text">+{stats.totalSAVRevenue.toLocaleString()} DZD</h3>
+            <h3 className="kpi-value profit-text">{canViewFinancials ? `+${stats.totalSAVRevenue.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-sub profit-text">{stats.completedCount} {t('réparations terminées', 'جهاز مكتمل', 'completed repairs')}</span>
           </div>
         </div>
@@ -322,7 +332,7 @@ export function RepairsPage() {
 
                       {/* Total Amount */}
                       <td>
-                        <span className="total-price-text">{(r.totalAmount || 0).toLocaleString()} DZD</span>
+                        <span className="total-price-text">{canViewFinancials ? `${(r.totalAmount || 0).toLocaleString()} DZD` : '**** DZD'}</span>
                       </td>
 
                       {/* Status */}

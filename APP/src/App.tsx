@@ -40,7 +40,7 @@ export function App() {
 
   return (
     <ToastProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
 
           <Route path="/login" element={
@@ -62,36 +62,36 @@ export function App() {
           }>
             <Route index element={<Dashboard />} />
 
-            <Route path="vente-pieces" element={<ProtectedRoute requiredRoles={['admin', 'manager', 'secretariat']}><VentePiecesPage /></ProtectedRoute>} />
-            <Route path="vente-laptops" element={<ProtectedRoute requiredRoles={['admin', 'manager', 'secretariat']}><VenteLaptopsPage /></ProtectedRoute>} />
-            <Route path="clients" element={<ProtectedRoute requiredRoles={['admin', 'manager', 'secretariat']}><ClientsPage /></ProtectedRoute>} />
+            <Route path="vente-pieces" element={<ProtectedRoute requiredModule="pieces"><VentePiecesPage /></ProtectedRoute>} />
+            <Route path="vente-laptops" element={<ProtectedRoute requiredModule="laptops"><VenteLaptopsPage /></ProtectedRoute>} />
+            <Route path="clients" element={<ProtectedRoute requiredModule="clients"><ClientsPage /></ProtectedRoute>} />
             <Route path="rh" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager', 'secretariat']}>
+              <ProtectedRoute requiredModule="rh">
                 <RHPage />
               </ProtectedRoute>
             } />
             <Route path="factures" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager', 'secretariat', 'comptable']}>
+              <ProtectedRoute requiredModule="factures">
                 <FacturesPage />
               </ProtectedRoute>
             } />
             <Route path="commandes" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager', 'secretariat']}>
+              <ProtectedRoute requiredModule="commandes">
                 <CommandesPage />
               </ProtectedRoute>
             } />
             <Route path="reparations" element={
-              <ProtectedRoute requiredRoles={['admin', 'manager', 'secretariat', 'technicien']}>
+              <ProtectedRoute requiredModule="reparations">
                 <RepairsPage />
               </ProtectedRoute>
             } />
             <Route path="settings" element={
-              <ProtectedRoute requiredRoles={['admin']}>
+              <ProtectedRoute requiredModule="settings">
                 <SettingsPage />
               </ProtectedRoute>
             } />
             <Route path="audit-log" element={
-              <ProtectedRoute requiredRoles={['admin']}>
+              <ProtectedRoute requiredModule="settings">
                 <AuditLogPage />
               </ProtectedRoute>
             } />
@@ -100,7 +100,7 @@ export function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </ToastProvider>
   );
 }

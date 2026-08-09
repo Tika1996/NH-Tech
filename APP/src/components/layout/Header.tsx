@@ -146,7 +146,7 @@ function HeaderNotifications({ language }: { language: string }) {
       {showAlertsModal && (
         <SmartAlertsModal
           alerts={alerts}
-          language={language}
+          language={(language === 'ar' || language === 'en') ? language : 'fr'}
           onClose={() => setShowAlertsModal(false)}
           onDismiss={dismissAlert}
         />

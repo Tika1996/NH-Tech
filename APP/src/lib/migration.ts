@@ -288,6 +288,26 @@ export async function migrateLocalToCloud() {
         // 2. Flush any pending queue first (optimistic writes that happened while offline)
         await flushSyncQueue();
 
+        // 2.5 Check if a global wipe/reset was performed from Cloud
+        try {
+          const { getById } = await import('./firebaseOps');
+          const wipeData = await getById<any>('system_settings', 'global_wipe');
+          if (wipeData && wipeData.resetTimestamp) {
+            const cloudResetTime = wipeData.resetTimestamp;
+            const localResetTime = parseInt(localStorage.getItem('nhtech_last_wipe_timestamp') || '0', 10) || 0;
+            if (cloudResetTime > localResetTime) {
+              console.warn('[SYNC] Global wipe detected from Cloud! Purging local database to prevent re-upload...');
+              const { purgeAllLocalData } = await import('./db');
+              await purgeAllLocalData();
+              localStorage.setItem('nhtech_last_wipe_timestamp', String(cloudResetTime));
+              syncInProgress = false;
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('[SYNC] Wipe check notice:', e);
+        }
+
         for (const collectionName of COLLECTIONS) {
             console.log(`[SYNC] Processing collection: ${collectionName}`);
 

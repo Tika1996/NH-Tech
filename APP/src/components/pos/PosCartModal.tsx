@@ -53,6 +53,7 @@ export interface CartItem {
 
 export interface PosSaleTransaction {
   id: string;
+  orderId?: string;
   customerName: string;
   customerPhone: string;
   customerAddress: string;
@@ -133,7 +134,7 @@ export function PosCartModal({
     addProductToActiveCart,
     removeProductFromActiveCart,
     clearActiveCartItems,
-    updateProductQuantityInActiveCart
+    updateItemQuantity
   } = usePosCartStore();
 
   // Active session helper
@@ -193,7 +194,7 @@ export function PosCartModal({
     setCustomerName(cust.name);
     setCustomerPhone(cust.phone);
     setCustomerAddress(cust.address);
-    setCustomerType(cust.type);
+    setCustomerType((cust.type === 'web' ? 'particulier' : cust.type) as any);
     setShowCustomerDropdown(false);
     setCustomerSearchQuery('');
     showToast(isAr ? `تم تحميل بيانات الزبون: ${cust.name}` : `Données du client ${cust.name} chargées !`, 'info');
@@ -490,7 +491,7 @@ export function PosCartModal({
                       if (matched && matched.name.toLowerCase() === val.trim().toLowerCase()) {
                         setCustomerPhone(matched.phone);
                         setCustomerAddress(matched.address);
-                        setCustomerType(matched.type);
+                        setCustomerType((matched.type === 'web' ? 'particulier' : matched.type) as any);
                       }
                     }}
                     onFocus={() => setShowCustomerDropdown(true)}
@@ -529,7 +530,7 @@ export function PosCartModal({
                       if (matched && matched.phone === val.trim()) {
                         setCustomerName(matched.name);
                         setCustomerAddress(matched.address);
-                        setCustomerType(matched.type);
+                        setCustomerType((matched.type === 'web' ? 'particulier' : matched.type) as any);
                       }
                     }}
                     placeholder="Ex: 0550123456"

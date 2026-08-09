@@ -1042,3 +1042,54 @@ export const remove = async (
         return false;
     }
 };
+
+/**
+ * Execute a global data wipe across both Firestore Cloud and local IndexedDB database.
+ * Writes a global wipe tombstone marker to 'system_settings/global_wipe' so all other connected devices purge their local stores automatically on next sync.
+ */
+export async function executeGlobalDataWipe(): Promise<{ success: boolean; error?: string }> {
+    const collectionsToWipe = [
+        'laptops',
+        'pieces',
+        'invoices',
+        'orders',
+        'repairs',
+        'customers',
+        'transactions_laptops',
+        'transactions_pieces',
+        'rh_staff',
+        'audit_logs',
+        'stockMovements',
+        'locations'
+    ];
+
+    try {
+        if (isFirebaseConfigured() && isAppOnline()) {
+            for (const colName of collectionsToWipe) {
+                try {
+                    const snapshot = await getDocs(collection(db, colName));
+                    const batchOps: Promise<any>[] = [];
+                    snapshot.forEach(docSnap => {
+                        batchOps.push(deleteDoc(doc(db, colName, docSnap.id)));
+                    });
+                    await Promise.all(batchOps);
+                } catch (e) {
+                    console.warn(`[GLOBAL_WIPE] Warning wiping collection ${colName}:`, e);
+                }
+            }
+
+            const nowMs = Date.now();
+            await setDoc(doc(db, 'system_settings', 'global_wipe'), {
+                resetTimestamp: nowMs,
+                wipedAt: new Date().toISOString(),
+            });
+        }
+
+        const { purgeAllLocalData } = await import('./db');
+        await purgeAllLocalData();
+        return { success: true };
+    } catch (err: any) {
+        console.error('[GLOBAL_WIPE] Error executing global wipe:', err);
+        return { success: false, error: err.message };
+    }
+}

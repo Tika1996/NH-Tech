@@ -183,3 +183,32 @@ export const createLocalStaff = async (staffData: {
     console.log('[LOCAL_DB] Created local staff record:', record.id);
     return record.id;
 };
+
+/**
+ * Purge all local Dexie tables and record local wipe timestamp
+ */
+export async function purgeAllLocalData(): Promise<void> {
+    try {
+        const tableNames = [
+            'products', 'services', 'customers', 'transactions', 'staff', 'settings',
+            'stockMovements', 'reservations', 'attendance', 'leaves', 'auditLogs',
+            'inscriptions', 'locations', 'hrTasks', 'sessions', 'materialMovements',
+            'laptops', 'pieces', 'invoices', 'orders', 'transactions_laptops',
+            'transactions_pieces', 'repairs'
+        ];
+        for (const name of tableNames) {
+            try {
+                const table = (db as any)[name];
+                if (table && typeof table.clear === 'function') {
+                    await table.clear();
+                }
+            } catch (e) {
+                console.warn(`[LOCAL_DB] Notice clearing table ${name}:`, e);
+            }
+        }
+        localStorage.setItem('nhtech_last_wipe_timestamp', String(Date.now()));
+        console.log('[LOCAL_DB] All local Dexie tables cleared.');
+    } catch (err) {
+        console.warn('[LOCAL_DB] Error purging local database:', err);
+    }
+}

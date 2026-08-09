@@ -29,6 +29,7 @@ import { generateNextId } from '../../lib/idGenerator';
 import { recordSaleCustomer } from '../../lib/customersStore';
 import { getAll, update, getById, set } from '../../lib/firebaseOps';
 import type { PosSaleTransaction } from '../../components/pos/PosCartModal';
+import { usePermissions } from '../../hooks/usePermissions';
 
 export interface WebOrder {
   id: string; // Ex: CMD-WEB-4819
@@ -107,6 +108,13 @@ function normalizeOrders(data: any[]): WebOrder[] {
 
 export function CommandesPage() {
   const { language } = useAppStore();
+  const { can } = usePermissions();
+  const canCreate = can('commandes', 'create');
+  const canEdit = can('commandes', 'edit');
+  const canDelete = can('commandes', 'delete');
+  const canExport = can('commandes', 'export');
+  const canViewFinancials = can('commandes', 'financials');
+
   const isAr = language === 'ar';
   const isEn = language === 'en';
   const t = (fr: string, ar: string, en: string) => isAr ? ar : isEn ? en : fr;
@@ -209,12 +217,15 @@ export function CommandesPage() {
   const effectiveOrders = useMemo(() => {
     return orders.map(ord => {
       const invMatch = invoices.find(inv =>
+        inv.orderId === ord.id ||
         inv.id === ord.id ||
+        inv.id === `FAC-WEB-${ord.id.replace(/^CMD-WEB-?/i, '')}` ||
         inv.id === `FACT-${ord.id.replace(/[^A-Za-z0-9]/g, '')}` ||
-        inv.id === `FACT-${ord.id}`
+        inv.id === `FACT-${ord.id}` ||
+        (inv.channel === 'website' && inv.customerName === ord.customerName && Math.abs((inv.totalPrice || 0) - (ord.totalAmount || 0)) < 1)
       );
 
-      if (invMatch && (invMatch.status === 'Retourné' || (invMatch.returnedItems && invMatch.returnedItems.length > 0))) {
+      if (invMatch && (invMatch.status === 'Retourné' || invMatch.status === 'Annulée' || (invMatch.returnedItems && invMatch.returnedItems.length > 0))) {
         return {
           ...ord,
           status: 'returned' as const,
@@ -228,14 +239,14 @@ export function CommandesPage() {
 
   // Statistics
   const stats = useMemo(() => {
-    const pendingCount = effectiveOrders.filter(o => o.status === 'pending').length;
-    const confirmedCount = effectiveOrders.filter(o => o.status === 'confirmed' || o.status === 'shipping').length;
-    const deliveredCount = effectiveOrders.filter(o => o.status === 'delivered' && !o.isRefunded).length;
-    const returnedCount = effectiveOrders.filter(o => o.status === 'returned' || o.isRefunded).length;
+    const pendingCount = effectiveOrders.filter(o => o.status === 'pending' && !o.isRefunded).length;
+    const confirmedCount = effectiveOrders.filter(o => (o.status === 'confirmed' || o.status === 'shipping') && !o.isRefunded).length;
+    const deliveredCount = effectiveOrders.filter(o => o.status === 'delivered' && !o.isRefunded && (o.status as string) !== 'returned' && (o.status as string) !== 'cancelled').length;
+    const returnedCount = effectiveOrders.filter(o => o.status === 'returned' || o.status === 'cancelled' || o.isRefunded).length;
 
     // Chiffre d'Affaires Web Total (EXCLUDES cancelled, returned, and refunded orders!)
     const totalWebRevenue = effectiveOrders
-      .filter(o => (o.status === 'delivered' || o.status === 'confirmed' || o.status === 'shipping') && o.status !== 'cancelled' && o.status !== 'returned' && !o.isRefunded)
+      .filter(o => (o.status === 'delivered' || o.status === 'confirmed' || o.status === 'shipping') && (o.status as string) !== 'cancelled' && (o.status as string) !== 'returned' && !o.isRefunded)
       .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
     return { pendingCount, confirmedCount, deliveredCount, returnedCount, totalWebRevenue };
@@ -301,6 +312,7 @@ export function CommandesPage() {
 
     const totalCost = itemsWithProfit.reduce((acc, i) => acc + (i.quantity * i.purchaseUnitPrice), 0);
     const totalPrice = ord.totalAmount || itemsWithProfit.reduce((acc, i) => acc + i.lineTotal, 0);
+    const netProfit = totalPrice - totalCost;
     let existingInvoices: PosSaleTransaction[] = [];
     try {
       const fetched = await getAll<PosSaleTransaction>('invoices');
@@ -314,6 +326,7 @@ export function CommandesPage() {
     const invoiceId = existingInv ? existingInv.id : generateNextId(existingInvoices, 'FAC-WEB', true, 4);
     const invoiceData: PosSaleTransaction = {
       id: invoiceId,
+      orderId: ord.id,
       customerName: ord.customerName || 'Client Web',
       customerPhone: ord.customerPhone || '',
       customerAddress: `${ord.customerWilaya || ''} ${ord.customerAddress || ''}`.trim(),
@@ -505,31 +518,51 @@ export function CommandesPage() {
     showToast(isAr ? 'تم تأكيد الطلبية وتخصيم الكمية وإنشاء الفاتورة بنجاح!' : 'Commande Web confirmée ! Stock déduit & Facture créée.', 'success');
   };
 
-  // Action: Mark Shipped
-  const handleMarkShipped = async (orderId: string) => {
+  // Shipping Modal State
+  const [shippingOrder, setShippingOrder] = useState<WebOrder | null>(null);
+  const [carrierInput, setCarrierInput] = useState<string>('Yalidine Express');
+  const [trackingInput, setTrackingInput] = useState<string>('');
+
+  // Action: Open Shipping Modal
+  const handleMarkShipped = (orderId: string) => {
     const targetOrder = orders.find(o => o.id === orderId);
     if (!targetOrder) return;
+    setShippingOrder(targetOrder);
+    setCarrierInput('Yalidine Express');
+    setTrackingInput(targetOrder.trackingNumber || `YAL-${Date.now().toString().slice(-6)}`);
+  };
 
-    const tracking = prompt(isAr ? 'أدخل رقم تتبع الشحنة (Yalidine, ProLog...):' : 'N° de suivi livraison (Yalidine, etc.) :', `YAL-${Date.now().toString().slice(-6)}`);
-    if (tracking === null) return;
+  // Action: Confirm Shipment with Carrier & Tracking Number
+  const handleConfirmShipment = async () => {
+    if (!shippingOrder) return;
+
+    const tracking = trackingInput.trim() || `YAL-${Date.now().toString().slice(-6)}`;
+    const carrier = carrierInput.trim();
+    const fullTracking = `${carrier ? carrier + ' - ' : ''}${tracking}`;
 
     const newHistory = recordStatusHistory(
-      targetOrder,
+      shippingOrder,
       'shipping',
-      { fr: `Expédiée avec le transporteur — N° ${tracking}`, ar: `تم التسليم لشركة التوصيل — رقم ${tracking}` },
-      `N° Suivi: ${tracking}`
+      { fr: `Expédiée avec ${carrier} — N° ${tracking}`, ar: `تم التسليم لشركة ${carrier} — رقم التتبع ${tracking}` },
+      `Transporteur: ${carrier} | N° Suivi: ${tracking}`
     );
 
     try {
-      await update('orders', orderId, { status: 'shipping', trackingNumber: tracking, history: newHistory });
+      await update('orders', shippingOrder.id, {
+        status: 'shipping',
+        trackingNumber: fullTracking,
+        history: newHistory
+      });
     } catch (err) {
       console.warn('Failed to update order status in Firestore:', err);
     }
 
     setOrders(prev =>
-      prev.map(ord => (ord.id === orderId ? { ...ord, status: 'shipping', trackingNumber: tracking, history: newHistory } : ord))
+      prev.map(ord => (ord.id === shippingOrder.id ? { ...ord, status: 'shipping', trackingNumber: fullTracking, history: newHistory } : ord))
     );
-    showToast(isAr ? 'تم تحديث حالة الطلبية إلى: قيد الشحن' : 'Commande marquée en cours de livraison !', 'info');
+
+    showToast(isAr ? `تم تحديث حالة الطلبية إلى: قيد الشحن (رقم التتبع: ${tracking})` : `Commande expédiée avec succès ! N° de suivi : ${tracking}`, 'success');
+    setShippingOrder(null);
   };
 
   // Action: Mark Delivered & Paid (Update Invoice Status to 'Payée')
@@ -718,7 +751,7 @@ export function CommandesPage() {
           <div className="kpi-icon emerald"><DollarSign size={22} color="#ffffff" /></div>
           <div className="kpi-info">
             <span className="kpi-label">{t("Chiffre d'Affaires Web", 'إجمالي مبيعات الموقع', 'Web Revenue')}</span>
-            <h3 className="kpi-value profit-text">{stats.totalWebRevenue.toLocaleString()} DZD</h3>
+            <h3 className="kpi-value profit-text">{canViewFinancials ? `${stats.totalWebRevenue.toLocaleString()} DZD` : '**** DZD'}</h3>
             <span className="kpi-sub profit-text">{t('Mague générée en ligne', 'مبيعات الموقع الإجمالية', 'Online generated revenue')}</span>
           </div>
         </div>
@@ -819,7 +852,7 @@ export function CommandesPage() {
                       {/* Total Amount */}
                       <td>
                         <div className="total-cell">
-                          <strong className="amount">{(ord.totalAmount || 0).toLocaleString()} DZD</strong>
+                          <strong className="amount">{canViewFinancials ? `${(ord.totalAmount || 0).toLocaleString()} DZD` : '**** DZD'}</strong>
                           <span className="shipping-sub">+{ord.shippingFee || 0} {t('DZD livraison', 'د.ج شحن', 'DZD shipping')}</span>
                         </div>
                       </td>
@@ -846,7 +879,7 @@ export function CommandesPage() {
                       {/* Actions */}
                       <td style={{ textAlign: 'right' }}>
                         <div className="actions-group">
-                          {ord.status === 'pending' && (
+                          {canEdit && ord.status === 'pending' && (
                             <button
                               type="button"
                               className="btn-action confirm-btn"
@@ -858,7 +891,7 @@ export function CommandesPage() {
                             </button>
                           )}
 
-                          {ord.status === 'confirmed' && (
+                          {canEdit && ord.status === 'confirmed' && (
                             <button
                               type="button"
                               className="btn-action ship-btn"
@@ -870,7 +903,7 @@ export function CommandesPage() {
                             </button>
                           )}
 
-                          {ord.status === 'shipping' && (
+                          {canEdit && ord.status === 'shipping' && (
                             <button
                               type="button"
                               className="btn-action deliver-btn"
@@ -882,9 +915,7 @@ export function CommandesPage() {
                             </button>
                           )}
 
-                          {/* Rembourser button removed per user request */}
-
-                          {ord.status !== 'cancelled' && ord.status !== 'delivered' && ord.status !== 'returned' && (
+                          {canDelete && ord.status !== 'cancelled' && ord.status !== 'delivered' && ord.status !== 'returned' && (
                             <button
                               type="button"
                               className="btn-action cancel-btn"
@@ -895,7 +926,7 @@ export function CommandesPage() {
                             </button>
                           )}
 
-                          {ord.status !== 'delivered' && ord.status !== 'cancelled' && ord.status !== 'returned' && !ord.isRefunded && (
+                          {canEdit && ord.status !== 'delivered' && ord.status !== 'cancelled' && ord.status !== 'returned' && !ord.isRefunded && (
                             <button
                               type="button"
                               className="btn-action ship-btn"
@@ -1192,6 +1223,79 @@ export function CommandesPage() {
           </div>
         , document.body);
       })()}
+
+      {/* Shipping / Tracking Modal */}
+      {shippingOrder && createPortal(
+        <div className="modal-backdrop open" onClick={() => setShippingOrder(null)}>
+          <div className="modal-container" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Truck size={22} color="#0055ff" />
+                <h3 style={{ margin: 0 }}>{t('Expédier la Commande Web', 'إرسال وشحن الطلبية', 'Ship Web Order')} — {shippingOrder.id}</h3>
+              </div>
+              <button className="close-btn" onClick={() => setShippingOrder(null)} type="button">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ gap: '16px' }}>
+              <div className="detail-box" style={{ background: 'var(--bg-tertiary)' }}>
+                <p style={{ margin: '0 0 6px 0', fontSize: '0.88rem' }}>Client: <strong>{shippingOrder.customerName}</strong> ({shippingOrder.customerPhone})</p>
+                <p style={{ margin: 0, fontSize: '0.88rem' }}>Destination: <strong>{shippingOrder.customerWilaya} — {shippingOrder.customerAddress}</strong></p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    {t('Transporteur / Livraison', 'شركة التوصيل / الشحن', 'Carrier')}
+                  </label>
+                  <select
+                    value={carrierInput}
+                    onChange={e => setCarrierInput(e.target.value)}
+                    className="edit-input-field"
+                  >
+                    <option value="Yalidine Express">Yalidine Express</option>
+                    <option value="ZR Express">ZR Express</option>
+                    <option value="ProLog Delivery">ProLog Delivery</option>
+                    <option value="Kazitour Express">Kazitour Express</option>
+                    <option value="Mayestro Delivery">Mayestro Delivery</option>
+                    <option value="Livreur Privé NH TECH">Livreur Privé NH TECH</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    {t('N° de Suivi de Colis (Tracking Number) *', 'رقم تتبع الشحنة *', 'Tracking Number *')}
+                  </label>
+                  <input
+                    type="text"
+                    value={trackingInput}
+                    onChange={e => setTrackingInput(e.target.value)}
+                    placeholder="Ex: YAL-948123"
+                    className="edit-input-field"
+                    style={{ fontSize: '1rem', fontWeight: 700, color: '#0055ff' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ gap: '12px' }}>
+              <button className="btn-secondary" onClick={() => setShippingOrder(null)} type="button">
+                {t('Annuler', 'إلغاء', 'Cancel')}
+              </button>
+              <button
+                className="btn-action ship-btn"
+                style={{ padding: '10px 22px', borderRadius: '10px', fontSize: '0.88rem' }}
+                onClick={handleConfirmShipment}
+                type="button"
+              >
+                <Truck size={16} />
+                <span>{t("Valider l'Expédition", 'تأكيد الشحن', 'Confirm Shipping')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
 
       <style>{`
         .commandes-page-container {

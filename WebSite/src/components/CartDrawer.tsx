@@ -145,7 +145,7 @@ export default function CartDrawer() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px solid #ffffff'
+                    border: '2px solid var(--bg-card)'
                   }}
                 >
                   {totalItemsCount}

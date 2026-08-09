@@ -428,7 +428,7 @@ export function ClientSpaceModal({ isOpen, onClose }: ClientSpaceModalProps) {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: '#FFFFFF',
+                            color: isCompleted ? '#FFFFFF' : 'var(--text-secondary)',
                             fontSize: '0.75rem',
                             fontWeight: 800,
                             flexShrink: 0,

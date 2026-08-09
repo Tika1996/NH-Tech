@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
 import { getPublishedPieces, submitWebOrder, type WebsitePiece } from '../lib/firebase';
+import { formatImageUrl } from '../lib/imageUtils';
 import { useCart } from '../lib/CartContext';
 import {
   Cpu, Search, Loader2, Package, Tag, Shield,
@@ -163,7 +164,7 @@ export default function VentePiecesPage() {
                 <div className="formation-card" key={piece.id}>
                   <Link to={`/piece/${piece.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="formation-card-image">
-                      <img src={piece.image || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=300'} alt={piece.name} />
+                      <img src={formatImageUrl(piece.image) || 'https://images.unsplash.com/photo-1591488320449-011701bb6704?w=300'} alt={piece.name} />
                       {piece.brand && <span className="formation-badge-populaire">{piece.brand}</span>}
                     </div>
                   </Link>
@@ -239,7 +240,7 @@ export default function VentePiecesPage() {
       {detailPiece && (
         <div className="modal-backdrop-web" onClick={() => setDetailPiece(null)} style={{ zIndex: 9999 }}>
           <div className="modal-content-web" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', padding: '24px' }}>
-            <button className="modal-close-btn" onClick={() => setDetailPiece(null)} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', border: 'none' }}>
+            <button className="modal-close-btn" onClick={() => setDetailPiece(null)} style={{ background: 'var(--bg-tertiary)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
               <X size={18} />
             </button>
 
@@ -412,7 +413,7 @@ export default function VentePiecesPage() {
         .modal-field label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
         .modal-field input, .modal-field textarea {
           padding: 10px 14px; border-radius: 10px; font-size: 0.9rem;
-          border: 1.5px solid var(--border, #e2e8f0); background: var(--bg-page, #f8fafc);
+          border: 1.5px solid var(--border-input, #cbd5e1); background: var(--bg-tertiary, #f8fafc); color: var(--text-primary);
           transition: border-color 0.2s;
         }
         .modal-field input:focus, .modal-field textarea:focus { border-color: var(--bleu); outline: none; }

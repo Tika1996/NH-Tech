@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { useToast } from '../../components/ui';
 import { createStaffAccount } from '../../lib/firebase';
+import { getRoles } from '../../lib/rolesStore';
 import { X, UserPlus, Mail, Lock, User, Phone, Shield } from 'lucide-react';
 import type { Role } from '../../types/roles';
 
@@ -300,13 +301,11 @@ export function CreateAccountModal({ isOpen, onClose, onSuccess, initialRole = '
                             onChange={(e) => setFormData({ ...formData, role: e.target.value as Role })}
                             disabled={loading}
                         >
-                            <option value="staff">{t.roles.staff}</option>
-                            <option value="professeur">{t.roles.professeur}</option>
-                            <option value="secretariat">{t.roles.secretariat}</option>
-                            <option value="cashier">{t.roles.cashier}</option>
-                            <option value="comptable">{t.roles.comptable}</option>
-                            <option value="manager">{t.roles.manager}</option>
-                            {!isManager && <option value="admin">{t.roles.admin}</option>}
+                            {getRoles().map(r => (
+                                <option key={r.id} value={r.id}>
+                                    {r.name[language === 'ar' ? 'ar' : 'fr'] || r.name.fr}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </form>

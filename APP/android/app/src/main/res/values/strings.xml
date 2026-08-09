@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Qalbi ITMAAN</string>
-    <string name="title_activity_main">Qalbi ITMAAN</string>
-    <string name="package_name">com.qalbi.itmaan.gestion</string>
-    <string name="custom_url_scheme">com.qalbi.itmaan.gestion</string>
+    <string name="app_name">NH TECH Manager</string>
+    <string name="title_activity_main">NH TECH Manager</string>
+    <string name="package_name">com.nhtech.gestion</string>
+    <string name="custom_url_scheme">com.nhtech.gestion</string>
 </resources>

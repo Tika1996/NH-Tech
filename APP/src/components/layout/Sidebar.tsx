@@ -22,6 +22,9 @@ import { subscribeOrders, getUnseenCount } from '../../lib/ordersStore';
 
 import type { Role } from '../../types/roles';
 
+import { usePermissions } from '../../hooks/usePermissions';
+import type { ModuleKey } from '../../types/permissions';
+
 const brand = BRAND;
 const logoUrl = import.meta.env.BASE_URL + 'brand/NH TECH-09.png'; // Reference to transparent cyber logo
 
@@ -29,23 +32,24 @@ interface MenuItem {
   path: string;
   icon: typeof LayoutDashboard;
   label: { fr: string; ar: string; en: string };
-  roles?: Role[]; // Si non défini, accessible à tous
+  moduleKey: ModuleKey;
 }
 
 const menuItems: MenuItem[] = [
-  { path: '/', icon: LayoutDashboard, label: { fr: 'Tableau de bord', ar: 'لوحة التحكم', en: 'Dashboard' } },
-  { path: '/vente-laptops', icon: Laptop, label: { fr: 'Laptops & PCs', ar: 'الحواسيب المحمولة', en: 'Laptops & PCs' }, roles: ['admin', 'manager', 'secretariat'] },
-  { path: '/vente-pieces', icon: Cpu, label: { fr: 'Vente de pièces', ar: 'قطع الغيار والعتاد', en: 'PC Components' }, roles: ['admin', 'manager', 'secretariat'] },
-  { path: '/commandes', icon: ShoppingBag, label: { fr: 'Commandes Web', ar: 'طلبيات الموقع', en: 'Web Orders' }, roles: ['admin', 'manager', 'secretariat'] },
-  { path: '/factures', icon: FileText, label: { fr: 'Factures & Ventes', ar: 'الفواتير والمبيعات', en: 'Invoices & Sales' }, roles: ['admin', 'manager', 'secretariat', 'comptable'] },
-  { path: '/reparations', icon: Wrench, label: { fr: 'Réparations / SAV', ar: 'الإصلاحات / الصيانة', en: 'Repairs / SAV' }, roles: ['admin', 'manager', 'secretariat', 'technicien'] },
-  { path: '/clients', icon: Users, label: { fr: 'Clients', ar: 'العملاء', en: 'Clients' }, roles: ['admin', 'manager', 'secretariat'] },
-  { path: '/rh', icon: UserCog, label: { fr: 'RH & Techniciens', ar: 'الموارد البشرية', en: 'HR & Staff' }, roles: ['admin', 'manager', 'secretariat'] },
-  { path: '/settings', icon: Settings, label: { fr: 'Paramètres', ar: 'الإعدادات', en: 'Settings' }, roles: ['admin'] },
+  { path: '/', icon: LayoutDashboard, label: { fr: 'Tableau de bord', ar: 'لوحة التحكم', en: 'Dashboard' }, moduleKey: 'dashboard' },
+  { path: '/vente-laptops', icon: Laptop, label: { fr: 'Laptops & PCs', ar: 'الحواسيب المحمولة', en: 'Laptops & PCs' }, moduleKey: 'laptops' },
+  { path: '/vente-pieces', icon: Cpu, label: { fr: 'Vente de pièces', ar: 'قطع الغيار والعتاد', en: 'PC Components' }, moduleKey: 'pieces' },
+  { path: '/commandes', icon: ShoppingBag, label: { fr: 'Commandes Web', ar: 'طلبيات الموقع', en: 'Web Orders' }, moduleKey: 'commandes' },
+  { path: '/factures', icon: FileText, label: { fr: 'Factures & Ventes', ar: 'الفواتير والمبيعات', en: 'Invoices & Sales' }, moduleKey: 'factures' },
+  { path: '/reparations', icon: Wrench, label: { fr: 'Réparations / SAV', ar: 'الإصلاحات / الصيانة', en: 'Repairs / SAV' }, moduleKey: 'reparations' },
+  { path: '/clients', icon: Users, label: { fr: 'Clients', ar: 'العملاء', en: 'Clients' }, moduleKey: 'clients' },
+  { path: '/rh', icon: UserCog, label: { fr: 'RH & Techniciens', ar: 'الموارد البشرية', en: 'HR & Staff' }, moduleKey: 'rh' },
+  { path: '/settings', icon: Settings, label: { fr: 'Paramètres', ar: 'الإعدادات', en: 'Settings' }, moduleKey: 'settings' },
 ];
 
 export function Sidebar() {
   const { language, sidebarCollapsed, toggleSidebar, logout, currentUser } = useAppStore();
+  const { hasModuleAccess, isAdmin } = usePermissions();
 
   const userRole = (currentUser?.role as Role) || 'staff';
 
@@ -64,8 +68,8 @@ export function Sidebar() {
   }, [userRole, currentUser]);
 
   const visibleMenuItems = menuItems.filter(item => {
-    if (!item.roles) return true;
-    return item.roles.includes(userRole);
+    if (isAdmin) return true;
+    return hasModuleAccess(item.moduleKey);
   });
 
   return (

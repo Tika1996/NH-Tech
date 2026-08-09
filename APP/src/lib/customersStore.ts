@@ -16,75 +16,9 @@ export interface Customer {
   createdAt: string;
 }
 
-const DEFAULT_CLIENTS_SEED: Customer[] = [
-  {
-    id: 'CLT-0001',
-    name: 'Karim Benali',
-    phone: '0550 12 34 56',
-    email: 'karim.benali@gmail.com',
-    address: 'Bouzaréah, Alger',
-    type: 'particulier',
-    source: 'magasin',
-    notes: 'Client habituel boutique PC Gamer',
-    totalSpent: 285000,
-    purchaseCount: 3,
-    createdAt: '15/01/2026'
-  },
-  {
-    id: 'CLT-0002',
-    name: 'SARL HighTech Solutions',
-    phone: '023 45 67 89',
-    email: 'contact@hightech-sol.dz',
-    address: 'Hydra, Alger',
-    type: 'entreprise',
-    source: 'magasin',
-    notes: 'Client B2B — Facturation avec NIF/NIS',
-    totalSpent: 850000,
-    purchaseCount: 5,
-    createdAt: '10/02/2026'
-  },
-  {
-    id: 'CLT-0003',
-    name: 'Amine Gamer Store',
-    phone: '0661 88 99 00',
-    email: 'amine.store@yahoo.fr',
-    address: 'Oran Centre',
-    type: 'revendeur',
-    source: 'magasin',
-    notes: 'Partenaire Revendeur Composants & GPU',
-    totalSpent: 1250000,
-    purchaseCount: 8,
-    createdAt: '22/02/2026'
-  },
-  {
-    id: 'CLT-0004',
-    name: 'Yacine Mansouri',
-    phone: '0770 44 55 66',
-    email: 'yacine.m@gmail.com',
-    address: 'Bab Ezzouar, Alger',
-    type: 'web',
-    source: 'website',
-    notes: 'Commande Web enregistrée via le site NH TECH',
-    totalSpent: 189000,
-    purchaseCount: 1,
-    createdAt: '01/03/2026'
-  },
-  {
-    id: 'CLT-0005',
-    name: 'Société Informatique Al-Djazair',
-    phone: '021 66 77 88',
-    email: 'info@info-djazair.dz',
-    address: 'Constantine',
-    type: 'entreprise',
-    source: 'magasin',
-    notes: 'Achat de parc de Laptops Pro',
-    totalSpent: 640000,
-    purchaseCount: 2,
-    createdAt: '12/03/2026'
-  }
-];
+const DEFAULT_CLIENTS_SEED: Customer[] = [];
 
-let globalCustomersList: Customer[] = [...DEFAULT_CLIENTS_SEED];
+let globalCustomersList: Customer[] = [];
 let isLoaded = false;
 const listeners = new Set<() => void>();
 
@@ -185,23 +119,13 @@ export async function loadCustomersFromFirebase(): Promise<Customer[]> {
       });
     } catch (e) { }
 
-    // 5. Seed default list if completely empty
-    if (customerMap.size === 0) {
-      DEFAULT_CLIENTS_SEED.forEach(c => customerMap.set(c.id, c));
-    }
-
     globalCustomersList = Array.from(customerMap.values());
     isLoaded = true;
-
-    // Persist aggregated list to Firestore
-    globalCustomersList.forEach(c => {
-      set<Customer>('customers', c.id, c).catch(() => {});
-    });
 
     notify();
   } catch (err) {
     if (globalCustomersList.length === 0) {
-      globalCustomersList = [...DEFAULT_CLIENTS_SEED];
+      globalCustomersList = [];
       isLoaded = true;
       notify();
     }

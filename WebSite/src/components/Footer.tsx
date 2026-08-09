@@ -9,7 +9,7 @@ export default function Footer() {
   return (
     <footer className="footer" style={{ background: '#05070B', borderTop: '1px solid rgba(255,255,255,0.08)', padding: '60px 0 28px' }}>
       <div className="container">
-        <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr 1fr', gap: '32px', marginBottom: '48px' }}>
+        <div className="footer-grid">
           
           {/* Brand Column */}
           <div className="footer-brand">
@@ -20,7 +20,7 @@ export default function Footer() {
                 style={{ height: '42px', width: 'auto', objectFit: 'contain' }} 
               />
             </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, maxWidth: '280px' }}>
+            <p style={{ color: '#94A3B8', fontSize: '0.88rem', lineHeight: 1.6, maxWidth: '280px' }}>
               {isAr ? 'شريكك التكنولوجي الموثوق لتجميع الحواسيب، اللابتوبات والصيانة.' : 'Votre partenaire technologique de confiance.'}
             </p>
 
@@ -41,7 +41,7 @@ export default function Footer() {
           {/* Col 1: Boutique */}
           <div className="footer-col">
             <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px', color: '#FFFFFF' }}>{isAr ? 'المتجر' : 'Boutique'}</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#94A3B8' }}>
               <li><Link to="/vente-laptops" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'لابتوبات' : 'Laptops'}</Link></li>
               <li><Link to="/vente-pieces" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'قطع غيار' : 'Pièces détachées'}</Link></li>
               <li><Link to="/vente-laptops" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'عروض خاصة' : 'Promotions'}</Link></li>
@@ -52,7 +52,7 @@ export default function Footer() {
           {/* Col 2: Services */}
           <div className="footer-col">
             <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px', color: '#FFFFFF' }}>{isAr ? 'الخدمات' : 'Services'}</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#94A3B8' }}>
               <li><Link to="/vente-laptops" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'الحواسيب' : 'Laptops & PCs'}</Link></li>
               <li><Link to="/vente-pieces" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'قطع العتاد' : 'Composants PC'}</Link></li>
               <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'الضمان والدعم' : 'Garantie & Support'}</Link></li>
@@ -62,7 +62,7 @@ export default function Footer() {
           {/* Col 3: Entreprise */}
           <div className="footer-col">
             <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px', color: '#FFFFFF' }}>{isAr ? 'المؤسسة' : 'Entreprise'}</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#94A3B8' }}>
               <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'عن المحل' : 'À propos'}</Link></li>
               <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'تقنيونا' : 'Nos techniciens'}</Link></li>
               <li><Link to="/contact" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'اتصل بنا' : 'Contact'}</Link></li>
@@ -72,7 +72,7 @@ export default function Footer() {
           {/* Col 4: Support */}
           <div className="footer-col">
             <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px', color: '#FFFFFF' }}>{isAr ? 'الدعم' : 'Support'}</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#94A3B8' }}>
               <li><Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>FAQ</Link></li>
               <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'الشروط العامة' : 'Conditions générales'}</Link></li>
               <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'سياسة الإرجاع' : 'Politique de retour'}</Link></li>
@@ -83,7 +83,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom copyright + Payment Badges */}
-        <div style={{ paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+        <div style={{ paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: '#94A3B8' }}>
           <p>© 2024 NH TECH. {isAr ? 'جميع الحقوق محفوظة.' : 'Tous droits réservés.'}</p>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>

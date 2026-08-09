@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/appStore';
 import { staffCollection } from '../../lib/firebase';
 import { saveOfflineCredentials } from '../../lib/offlineAuth';
 import { BRAND } from '../../lib/brand';
-import { FIREBASE_CONFIG_STORAGE_KEY, parseFirebaseConfigFromText, saveFirebaseConfigToStorage } from '../../lib/config';
+import { FIREBASE_CONFIG_STORAGE_KEY, SETUP_COMPLETED_STORAGE_KEY, parseFirebaseConfigFromText, saveFirebaseConfigToStorage } from '../../lib/config';
 
 const logoUrl = import.meta.env.BASE_URL + 'logo.png';
 
@@ -144,6 +144,7 @@ export function SetupPage() {
         ...config,
         measurementId: config.measurementId || undefined,
       });
+      localStorage.setItem(SETUP_COMPLETED_STORAGE_KEY, 'true');
 
       setIsSaved(true);
       setTimeout(() => {
@@ -192,6 +193,7 @@ export function SetupPage() {
         displayName: adminData.name.trim(),
         role: 'admin'
       }, adminData.password);
+      localStorage.setItem(SETUP_COMPLETED_STORAGE_KEY, 'true');
 
       // Authenticate in store immediately
       const { setAuthenticated, setCurrentUser } = useAppStore.getState();

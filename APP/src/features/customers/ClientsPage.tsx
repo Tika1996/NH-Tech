@@ -20,6 +20,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { CustomerHistoryModal } from './CustomerHistoryModal';
+import { usePermissions } from '../../hooks/usePermissions';
 
 // --- Types ---
 
@@ -92,6 +93,9 @@ const translations = {
     typeRevendeur: 'Revendeur',
     typeEntreprise: 'Entreprise',
     typeWeb: 'Client Web',
+    viewHistory: 'Historique',
+    editClient: 'Modifier',
+    deleteClient: 'Supprimer',
     requiredField: 'Ce champ est requis',
   },
   en: {
@@ -146,6 +150,9 @@ const translations = {
     typeRevendeur: 'Reseller',
     typeEntreprise: 'Company',
     typeWeb: 'Web Client',
+    viewHistory: 'History',
+    editClient: 'Edit',
+    deleteClient: 'Delete',
     requiredField: 'This field is required',
   },
   ar: {
@@ -160,11 +167,14 @@ const translations = {
     revendeursDesc: 'شركاء التوزيع',
     entreprises: 'شركات',
     entreprisesDesc: 'عملاء شركات',
+    clientsWeb: 'عملاء الموقع',
+    clientsWebDesc: 'المتجر الإلكتروني',
     searchPlaceholder: 'البحث عن عميل...',
     filterAll: 'الكل',
     filterParticulier: 'فرد',
     filterRevendeur: 'موزع',
     filterEntreprise: 'شركة',
+    filterWeb: 'عملاء الموقع',
     colName: 'الاسم',
     colPhone: 'الهاتف',
     colAddress: 'العنوان',
@@ -196,57 +206,11 @@ const translations = {
     typeParticulier: 'فرد',
     typeRevendeur: 'موزع',
     typeEntreprise: 'شركة',
+    typeWeb: 'عميل موقع',
+    viewHistory: 'السجل',
+    editClient: 'تعديل',
+    deleteClient: 'حذف',
     requiredField: 'هذا الحقل مطلوب',
-  },
-  en: {
-    pageTitle: 'Clients',
-    pageSubtitle: 'Manage your client base, view their history and statistics.',
-    addClient: 'Add Client',
-    totalClients: 'Total Clients',
-    allRegistered: 'Registered clients',
-    particuliers: 'Individuals',
-    particuliersDesc: 'Individual clients',
-    revendeurs: 'Resellers',
-    revendeursDesc: 'Reseller partners',
-    entreprises: 'Companies',
-    entreprisesDesc: 'Corporate clients',
-    searchPlaceholder: 'Search a client...',
-    filterAll: 'All',
-    filterParticulier: 'Individual',
-    filterRevendeur: 'Reseller',
-    filterEntreprise: 'Company',
-    colName: 'Name',
-    colPhone: 'Phone',
-    colAddress: 'Address',
-    colType: 'Type',
-    colTotalSpent: 'Total Spent',
-    colPurchases: 'Purchases',
-    colDate: 'Registered',
-    colActions: 'Actions',
-    noClients: 'No clients found',
-    noClientsDesc: 'Add your first client to get started.',
-    modalAddTitle: 'Add Client',
-    modalEditTitle: 'Edit Client',
-    labelName: 'Full Name',
-    labelPhone: 'Phone',
-    labelEmail: 'Email (optional)',
-    labelAddress: 'Address',
-    labelType: 'Client Type',
-    labelNotes: 'Notes (optional)',
-    save: 'Save',
-    cancel: 'Cancel',
-    confirmDelete: 'Delete this client?',
-    confirmDeleteMsg: 'This action cannot be undone.',
-    yes: 'Yes, delete',
-    no: 'No',
-    toastAdded: 'Client added successfully',
-    toastEdited: 'Client updated successfully',
-    toastDeleted: 'Client deleted',
-    dzdSuffix: 'DZD',
-    typeParticulier: 'Individual',
-    typeRevendeur: 'Reseller',
-    typeEntreprise: 'Company',
-    requiredField: 'This field is required',
   },
 };
 
@@ -259,6 +223,13 @@ import { useCustomers } from '../../lib/customersStore';
 
 export function ClientsPage() {
   const { language } = useAppStore();
+  const { can } = usePermissions();
+  const canCreate = can('clients', 'create');
+  const canEdit = can('clients', 'edit');
+  const canDelete = can('clients', 'delete');
+  const canExport = can('clients', 'export');
+  const canViewFinancials = can('clients', 'financials');
+
   const lang = language === 'ar' ? 'ar' : language === 'en' ? 'en' : 'fr';
   const t = translations[lang];
   const { showToast } = useToast();
@@ -389,10 +360,12 @@ export function ClientsPage() {
           <h1 className="page-title"><Users size={28} className="title-icon" /> {t.pageTitle}</h1>
           <p className="page-subtitle">{t.pageSubtitle}</p>
         </div>
-        <button className="btn-primary-action" type="button" onClick={openAddModal}>
-          <Plus size={18} />
-          <span>{t.addClient}</span>
-        </button>
+        {canCreate && (
+          <button className="btn-primary-action" type="button" onClick={openAddModal}>
+            <Plus size={18} />
+            <span>{t.addClient}</span>
+          </button>
+        )}
       </div>
 
       {/* Stats Cards (Matching FacturesPage KPI Grid) */}
@@ -523,7 +496,7 @@ export function ClientsPage() {
                       <td><span className="mono">{client.phone}</span></td>
                       <td><span className="date-text">{client.address}</span></td>
                       <td><span className={badgeClass} style={badgeStyle}>{badge.label}</span></td>
-                      <td><span className="total-price-text">{client.totalSpent.toLocaleString()} {t.dzdSuffix}</span></td>
+                      <td><span className="total-price-text">{canViewFinancials ? `${client.totalSpent.toLocaleString()} ${t.dzdSuffix}` : '**** DZD'}</span></td>
                       <td><span className="mono" style={{ fontWeight: 700 }}>{client.purchaseCount}</span></td>
                       <td><div className="date-time-cell"><span className="date-text">{client.createdAt}</span></div></td>
                       <td>
@@ -536,20 +509,24 @@ export function ClientsPage() {
                           >
                             <Eye size={15} />
                           </button>
-                          <button
-                            className="dots-icon-btn edit-btn"
-                            title={t.editClient || 'Modifier'}
-                            onClick={() => openEditModal(client)}
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button
-                            className="dots-icon-btn delete-btn"
-                            title={t.deleteClient || 'Supprimer'}
-                            onClick={() => setDeleteConfirm(client.id)}
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {canEdit && (
+                            <button
+                              className="dots-icon-btn edit-btn"
+                              title={t.editClient || 'Modifier'}
+                              onClick={() => openEditModal(client)}
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              className="dots-icon-btn delete-btn"
+                              title={t.deleteClient || 'Supprimer'}
+                              onClick={() => setDeleteConfirm(client.id)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

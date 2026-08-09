@@ -188,7 +188,7 @@ export function DepositSlip({ repair, onClose }: DepositSlipProps) {
             <div className="slip-header" style={{ textAlign: 'center', borderBottom: '2px solid #1a1a2e', paddingBottom: 12, marginBottom: 16 }}>
               <h1 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0057FF' }}>{brand.name.fr}</h1>
               <p style={{ fontSize: '0.75rem', color: '#555', marginTop: 4 }}>
-                {brand.subtitle.fr} — Tél: {brand.contacts?.phone || '—'}
+                {brand.subtitle.fr} — Tél: {brand.company?.phone || '—'}
               </p>
             </div>
 

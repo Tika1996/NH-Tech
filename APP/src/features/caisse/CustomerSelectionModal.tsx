@@ -32,7 +32,7 @@ export function CustomerSelectionModal({ language, selectedCustomer, onSelect, o
         phone: 'رقم الهاتف',
         wilaya: 'الولاية',
         add: 'إضافة'
-    } : language === 'en' ? {
+    } : (language as string) === 'en' ? {
         title: 'Select a Customer',
         search: 'Search...',
         select: 'Select',
