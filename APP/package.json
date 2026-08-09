@@ -17,7 +17,7 @@
     "mobile:open": "npx cap open android",
     "mobile:run": "npm run build && npx cap run android",
     "mobile:apk:debug": "set \"JAVA_HOME=C:\\Users\\SAMSUNG\\jdk17\\jdk-17.0.20+8\" && npm run build && npx cap sync android && cd android && gradlew.bat assembleDebug && copy \"app\\build\\outputs\\apk\\debug\\app-debug.apk\" \"..\\release\\NH TECH Manager.apk\"",
-    "mobile:apk:release": "set \"JAVA_HOME=C:\\Users\\SAMSUNG\\jdk17\\jdk-17.0.20+8\" && npm run build && npx cap sync android && cd android && gradlew.bat assembleRelease && copy \"app\\build\\outputs\\apk\\release\\app-release-unsigned.apk\" \"..\\release\\NH TECH Manager.apk\""
+    "mobile:apk:release": "set \"JAVA_HOME=C:\\Users\\SAMSUNG\\jdk17\\jdk-17.0.20+8\" && npm run build && npx cap sync android && cd android && gradlew.bat assembleRelease && copy \"app\\build\\outputs\\apk\\release\\app-release.apk\" \"..\\release\\NH TECH Manager Release.apk\""
   },
   "dependencies": {
     "@capacitor/android": "^6.1.0",
