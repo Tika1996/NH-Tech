@@ -6,14 +6,16 @@ import { trackDeliveryPackage, trackRepair, type TrackingDeliveryResult, type Tr
 interface ClientSpaceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialCode?: string;
+  initialTab?: 'delivery' | 'repair';
 }
 
-export function ClientSpaceModal({ isOpen, onClose }: ClientSpaceModalProps) {
+export function ClientSpaceModal({ isOpen, onClose, initialCode, initialTab }: ClientSpaceModalProps) {
   const { lang } = useLanguage();
   const isAr = lang === 'ar';
 
-  const [activeTab, setActiveTab] = useState<'delivery' | 'repair'>('delivery');
-  const [inputCode, setInputCode] = useState('');
+  const [activeTab, setActiveTab] = useState<'delivery' | 'repair'>(initialTab || 'repair');
+  const [inputCode, setInputCode] = useState(initialCode || '');
   const [inputPhone, setInputPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

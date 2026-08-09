@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/appStore';
 import { Printer, X, QrCode } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 import type { RepairDossier } from '../../lib/firebase';
+import { getRepairTrackingWebUrl } from '../../lib/config';
 
 interface DepositSlipProps {
   repair: RepairDossier;
@@ -16,7 +17,7 @@ export function DepositSlip({ repair, onClose }: DepositSlipProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const brand = BRAND;
-  const trackingUrl = `https://nhtech.dz/suivi?code=${repair.trackingCode || repair.id}`;
+  const trackingUrl = getRepairTrackingWebUrl(repair.trackingCode || repair.id);
   // High-precision standard ISO 18004 QR Code API URL
   const realQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(trackingUrl)}`;
 

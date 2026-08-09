@@ -144,9 +144,20 @@ export const getPublicWebsiteUrl = (): string => {
         return storedUrl.trim().replace(/\/$/, '');
     }
 
-    if (window.location.origin.includes('localhost')) {
-        return 'http://localhost:5174';
-    }
+    return 'https://tika1996.github.io/NH-Tech';
+};
 
-    return 'https://nhtech-dz.web.app';
+export const getLaptopWebUrl = (laptopId: string): string => {
+    const baseUrl = getPublicWebsiteUrl();
+    return `${baseUrl}/#/laptop/${laptopId}`;
+};
+
+export const getPieceWebUrl = (pieceId: string): string => {
+    const baseUrl = getPublicWebsiteUrl();
+    return `${baseUrl}/#/piece/${pieceId}`;
+};
+
+export const getRepairTrackingWebUrl = (repairCode?: string): string => {
+    const baseUrl = getPublicWebsiteUrl();
+    return `${baseUrl}/#/?track=${encodeURIComponent(repairCode || '')}`;
 };

@@ -40,7 +40,7 @@ import type { CartProduct, PosSaleTransaction } from '../../components/pos/PosCa
 import { ReturnSaleModal } from '../../components/pos/ReturnSaleModal';
 import { formatImageUrl, parseGalleryImagesText } from '../../lib/imageUtils';
 import { DraggablePosBubble } from '../../components/pos/DraggablePosBubble';
-import { getPublicWebsiteUrl } from '../../lib/config';
+import { getPublicWebsiteUrl, getPieceWebUrl } from '../../lib/config';
 import { usePosCartStore } from '../../store/posCartStore';
 import { usePermissions } from '../../hooks/usePermissions';
 
@@ -649,10 +649,9 @@ export function VentePiecesPage() {
                           type="button"
                           className="btn-card-action btn-copy-link"
                           onClick={() => {
-                            const webBaseUrl = getPublicWebsiteUrl();
-                            const linkUrl = `${webBaseUrl}/piece/${piece.id}`;
+                            const linkUrl = getPieceWebUrl(piece.id);
                             navigator.clipboard.writeText(linkUrl);
-                            showToast(isAr ? 'تم نسخ رابط القطعة (ID)!' : 'Lien Web (ID) de la pièce copié !', 'success');
+                            showToast(isAr ? 'تم نسخ رابط القطعة (GitHub Pages)!' : 'Lien Web (GitHub Pages) de la pièce copié !', 'success');
                           }}
                           title={t('Copier le lien web', 'نسخ رابط المنتوج', 'Copy web link')}
                         >

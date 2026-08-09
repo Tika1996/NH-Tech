@@ -54,6 +54,20 @@ export default function HomePage() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
 
   const [trackingOpen, setTrackingOpen] = useState(false);
+  const [prefilledTrackingCode, setPrefilledTrackingCode] = useState('');
+
+  useEffect(() => {
+    // Auto-detect tracking parameter from QR codes or direct links
+    const hashStr = window.location.hash || '';
+    const searchStr = window.location.search || '';
+    const combined = hashStr + searchStr;
+    const match = combined.match(/[?&](?:track|code)=([^&]+)/i);
+    if (match && match[1]) {
+      const code = decodeURIComponent(match[1]);
+      setPrefilledTrackingCode(code);
+      setTrackingOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     Promise.all([getPublishedLaptops(), getPublishedPieces()])
@@ -609,7 +623,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <ClientSpaceModal isOpen={trackingOpen} onClose={() => setTrackingOpen(false)} />
+      <ClientSpaceModal isOpen={trackingOpen} onClose={() => setTrackingOpen(false)} initialCode={prefilledTrackingCode} initialTab="repair" />
     </div>
   );
 }

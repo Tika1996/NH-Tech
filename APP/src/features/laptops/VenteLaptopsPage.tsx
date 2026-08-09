@@ -43,13 +43,17 @@ import {
   RotateCcw as ReturnIcon,
   Link2,
   Video,
+  Upload,
+  FileText,
+  Check,
 } from 'lucide-react';
 import { PosCartModal } from '../../components/pos/PosCartModal';
 import type { CartProduct, PosSaleTransaction } from '../../components/pos/PosCartModal';
 import { ReturnSaleModal } from '../../components/pos/ReturnSaleModal';
 import { formatImageUrl, parseGalleryImagesText } from '../../lib/imageUtils';
 import { DraggablePosBubble } from '../../components/pos/DraggablePosBubble';
-import { getPublicWebsiteUrl } from '../../lib/config';
+import { getPublicWebsiteUrl, getLaptopWebUrl } from '../../lib/config';
+import { parseLaptopTxtSpec, type ParsedLaptopSpecs } from '../../lib/txtSpecParser';
 import { usePosCartStore } from '../../store/posCartStore';
 import { usePermissions } from '../../hooks/usePermissions';
 
@@ -167,6 +171,10 @@ export function VenteLaptopsPage() {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedTransactionForReturn, setSelectedTransactionForReturn] = useState<PosSaleTransaction | null>(null);
 
+  // Bulk .txt Spec Import State
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [bulkImportItems, setBulkImportItems] = useState<ParsedLaptopSpecs[]>([]);
+
   const [formData, setFormData] = useState({
     name: { fr: '', ar: '' },
     brand: '',
@@ -190,6 +198,105 @@ export function VenteLaptopsPage() {
     videoUrl: '',
     publishedOnWebsite: true
   });
+
+  const handleSingleTxtFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        const parsed = parseLaptopTxtSpec(text, file.name);
+        setFormData(prev => ({
+          ...prev,
+          name: { fr: parsed.name, ar: parsed.name },
+          brand: parsed.brand || prev.brand,
+          specs: {
+            cpu: parsed.cpu || prev.specs.cpu,
+            ram: parsed.ram || prev.specs.ram,
+            ssd: parsed.ssd || prev.specs.ssd,
+            gpu: parsed.gpu || prev.specs.gpu,
+            screen: parsed.screen || prev.specs.screen,
+          }
+        }));
+        showToast(isAr ? `تم تحميل المواصفات من ${file.name}` : `Fiche technique chargée depuis ${file.name} !`, 'success');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  const handleBulkTxtFilesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    const parsedResults: ParsedLaptopSpecs[] = [];
+    let processedCount = 0;
+
+    fileList.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (text) {
+          const parsed = parseLaptopTxtSpec(text, file.name);
+          parsedResults.push(parsed);
+        }
+        processedCount++;
+        if (processedCount === fileList.length) {
+          setBulkImportItems(parsedResults);
+          setShowBulkImportModal(true);
+          showToast(isAr ? `تم تحليل ${parsedResults.length} ملف .txt` : `${parsedResults.length} fiches techniques analysées !`, 'info');
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+
+    e.target.value = '';
+  };
+
+  const handleBulkImportSave = async () => {
+    if (bulkImportItems.length === 0) return;
+
+    let updatedLaptops = [...laptops];
+    let createdCount = 0;
+
+    for (const item of bulkImportItems) {
+      const newId = generateNextId(updatedLaptops, 'LAP', false, 4);
+      const newLaptop: LaptopItem = {
+        id: newId,
+        name: { fr: item.name, ar: item.name },
+        brand: item.brand || 'Samsung',
+        category: 'ultrabook',
+        purchasePrice: 0,
+        price: item.price || 0,
+        stock: item.stock || 1,
+        minStockAlert: 1,
+        specs: {
+          cpu: item.cpu || '',
+          ram: item.ram || '',
+          ssd: item.ssd || '',
+          gpu: item.gpu || '',
+          screen: item.screen || ''
+        },
+        condition: 'Neuf',
+        warrantyMonths: 12,
+        image: '',
+        galleryImages: [],
+        videoUrl: '',
+        publishedOnWebsite: true
+      };
+
+      updatedLaptops = [newLaptop, ...updatedLaptops];
+      await set<LaptopItem>('laptops', newId, newLaptop).catch(err => console.warn('Laptop bulk create notice:', err));
+      createdCount++;
+    }
+
+    setLaptops(updatedLaptops);
+    setShowBulkImportModal(false);
+    setBulkImportItems([]);
+    showToast(isAr ? `تم إضافة ${createdCount} حاسوب بنجاح!` : `${createdCount} laptops ajoutés au stock avec succès !`, 'success');
+  };
 
   // Map laptops to CartProduct format
   const availableCartProducts: CartProduct[] = useMemo(() => {
@@ -496,10 +603,23 @@ export function VenteLaptopsPage() {
             </button>
           )}
           {canCreate && (
-            <button className="btn btn-primary add-btn" type="button" onClick={() => { setEditingLaptop(null); setFormData({ name: { fr: '', ar: '' }, brand: '', category: '' as any, purchasePrice: 0, price: 0, stock: 1, minStockAlert: 1, specs: { cpu: '', ram: '', ssd: '', gpu: '', screen: '' }, condition: 'Neuf' as const, warrantyMonths: 12, image: '', galleryImages: [], galleryImagesText: '', videoUrl: '', publishedOnWebsite: true }); setShowAddModal(true); }}>
-              <Plus size={18} />
-              <span>{t('Ajouter au stock', 'إضافة للمخزون', 'Add to Stock')}</span>
-            </button>
+            <>
+              <label className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'rgba(0, 87, 255, 0.08)', color: 'var(--color-primary, #0057FF)', border: '1px solid var(--color-primary, #0057FF)' }}>
+                <FileText size={16} />
+                <span>{t('Importer Fiches (.txt)', 'استيراد بطاقات (.txt)', 'Import Specs (.txt)')}</span>
+                <input
+                  type="file"
+                  accept=".txt"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={handleBulkTxtFilesUpload}
+                />
+              </label>
+              <button className="btn btn-primary add-btn" type="button" onClick={() => { setEditingLaptop(null); setFormData({ name: { fr: '', ar: '' }, brand: '', category: '' as any, purchasePrice: 0, price: 0, stock: 1, minStockAlert: 1, specs: { cpu: '', ram: '', ssd: '', gpu: '', screen: '' }, condition: 'Neuf' as const, warrantyMonths: 12, image: '', galleryImages: [], galleryImagesText: '', videoUrl: '', publishedOnWebsite: true }); setShowAddModal(true); }}>
+                <Plus size={18} />
+                <span>{t('Ajouter au stock', 'إضافة للمخزون', 'Add to Stock')}</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -686,10 +806,9 @@ export function VenteLaptopsPage() {
                           type="button"
                           className="btn-card-action btn-copy-link"
                           onClick={() => {
-                            const webBaseUrl = getPublicWebsiteUrl();
-                            const linkUrl = `${webBaseUrl}/laptop/${laptop.id}`;
+                            const linkUrl = getLaptopWebUrl(laptop.id);
                             navigator.clipboard.writeText(linkUrl);
-                            showToast(isAr ? 'تم نسخ رابط المنتوج (ID)!' : 'Lien Web (ID) du laptop copié !', 'success');
+                            showToast(isAr ? 'تم نسخ رابط المنتوج (GitHub Pages)!' : 'Lien Web (GitHub Pages) du laptop copié !', 'success');
                           }}
                           title={t('Copier le lien web', 'نسخ رابط المنتوج', 'Copy web link')}
                         >
@@ -833,6 +952,52 @@ export function VenteLaptopsPage() {
               <button className="icon-btn-close" onClick={() => setShowAddModal(false)}><X size={20} /></button>
             </div>
             <div className="add-modal-body">
+              {/* Auto-fill from .txt spec file */}
+              <div style={{
+                background: 'rgba(0, 87, 255, 0.06)',
+                border: '1.5px dashed var(--color-primary, #0057FF)',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={20} style={{ color: 'var(--color-primary, #0057FF)' }} />
+                  <div>
+                    <div style={{ fontSize: '0.83rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {isAr ? 'تعبئة تلقائية من ملف Fiche Technique (.txt)' : 'Auto-remplissage depuis Fiche Technique (.txt)'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                      {isAr ? 'اختر ملف .txt المستخرج من برنامج NH Tech' : 'Fichier .txt généré par NH Tech.exe'}
+                    </div>
+                  </div>
+                </div>
+                <label style={{
+                  background: 'var(--color-primary, #0057FF)',
+                  color: '#fff',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap'
+                }}>
+                  <Upload size={14} />
+                  <span>{isAr ? 'رفع ملف' : 'Charger .txt'}</span>
+                  <input
+                    type="file"
+                    accept=".txt"
+                    style={{ display: 'none' }}
+                    onChange={handleSingleTxtFileUpload}
+                  />
+                </label>
+              </div>
               <div className="form-group">
                 <label><Laptop size={14} /> Nom du produit *</label>
                 <input className="modal-input" placeholder="Ex: ASUS ROG Strix G16" value={formData.name.fr} onChange={e => setFormData(f => ({...f, name: { fr: e.target.value, ar: e.target.value }}))} />
@@ -928,6 +1093,117 @@ export function VenteLaptopsPage() {
             <div className="add-modal-footer">
               <button className="btn btn-ghost-modal" onClick={() => setShowAddModal(false)}>Annuler</button>
               <button className="btn btn-primary add-btn" onClick={handleSave}>{editingLaptop ? 'Enregistrer' : 'Ajouter au stock'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import .txt Modal */}
+      {showBulkImportModal && (
+        <div className="modal-backdrop open" onClick={() => setShowBulkImportModal(false)}>
+          <div className="add-laptop-modal" style={{ maxWidth: '850px' }} onClick={e => e.stopPropagation()}>
+            <div className="add-modal-header">
+              <h3>
+                <FileText size={20} style={{ display: 'inline', margin: '0 6px 2px 0', color: 'var(--color-primary, #0057FF)' }} />
+                {isAr ? `استيراد ${bulkImportItems.length} بطاقات تقنية (.txt)` : `Importer ${bulkImportItems.length} Fiches Techniques (.txt)`}
+              </h3>
+              <button className="icon-btn-close" onClick={() => setShowBulkImportModal(false)}><X size={20} /></button>
+            </div>
+            <div className="add-modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                {isAr
+                  ? 'تم استخراج مواصفات الحواسيب بنجاح. يمكنك مراجعة الأسماء والأسعار قبل إضافتها دفعة واحدة للمخزون:'
+                  : 'Spécifications extraites avec succès. Vérifiez et ajustez les prix et noms avant d\'ajouter au stock :'}
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {bulkImportItems.map((item, idx) => (
+                  <div key={idx} style={{ background: 'var(--bg-tertiary, #f8fafc)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color, #e2e8f0)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '0.78rem', background: 'rgba(0,87,255,0.1)', color: 'var(--color-primary, #0057FF)', padding: '3px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                        📁 {item.fileName}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setBulkImportItems(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                      >
+                        ✕ Retirer
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 0.8fr', gap: '10px', marginBottom: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Nom du Laptop</label>
+                        <input
+                          className="modal-input"
+                          style={{ padding: '6px 10px', fontSize: '0.83rem' }}
+                          value={item.name}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setBulkImportItems(prev => prev.map((it, i) => i === idx ? { ...it, name: val } : it));
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Marque</label>
+                        <input
+                          className="modal-input"
+                          style={{ padding: '6px 10px', fontSize: '0.83rem' }}
+                          value={item.brand}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setBulkImportItems(prev => prev.map((it, i) => i === idx ? { ...it, brand: val } : it));
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Prix Vente (DZD)</label>
+                        <input
+                          className="modal-input"
+                          type="number"
+                          style={{ padding: '6px 10px', fontSize: '0.83rem' }}
+                          value={item.price || ''}
+                          onChange={e => {
+                            const val = Number(e.target.value);
+                            setBulkImportItems(prev => prev.map((it, i) => i === idx ? { ...it, price: val } : it));
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Quantité</label>
+                        <input
+                          className="modal-input"
+                          type="number"
+                          style={{ padding: '6px 10px', fontSize: '0.83rem' }}
+                          value={item.stock || 1}
+                          onChange={e => {
+                            const val = Number(e.target.value);
+                            setBulkImportItems(prev => prev.map((it, i) => i === idx ? { ...it, stock: val } : it));
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      {item.cpu && <span>💻 <strong>CPU:</strong> {item.cpu}</span>}
+                      {item.ram && <span>⚡ <strong>RAM:</strong> {item.ram}</span>}
+                      {item.ssd && <span>💾 <strong>SSD:</strong> {item.ssd}</span>}
+                      {item.gpu && <span>🎮 <strong>GPU:</strong> {item.gpu}</span>}
+                      {item.screen && <span>🖥️ <strong>Écran:</strong> {item.screen}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="add-modal-footer" style={{ padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button className="btn btn-ghost-modal" type="button" onClick={() => setShowBulkImportModal(false)}>
+                {isAr ? 'إلغاء' : 'Annuler'}
+              </button>
+              <button className="btn btn-primary" type="button" onClick={handleBulkImportSave}>
+                <Check size={16} />
+                <span>{isAr ? `إضافة الكل (${bulkImportItems.length}) للمخزون` : `Ajouter Tout (${bulkImportItems.length}) au Stock`}</span>
+              </button>
             </div>
           </div>
         </div>
