@@ -6,6 +6,9 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   server: {
-    host: true
+    host: true,
+    watch: {
+      ignored: ['**/release/**', '**/dist/**', '**/android/**', '**/.gradle/**']
+    }
   }
 })
