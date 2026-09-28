@@ -535,6 +535,7 @@ onAuthStateChanged(auth, (user) => {
             _firestoreDisableTimer = null;
         }
         setTimeout(() => flushSyncQueue(), 1500);
+        setTimeout(() => cleanupDuplicateStaffDocuments(), 3000);
     }
 });
 
@@ -1091,5 +1092,89 @@ export async function executeGlobalDataWipe(): Promise<{ success: boolean; error
     } catch (err: any) {
         console.error('[GLOBAL_WIPE] Error executing global wipe:', err);
         return { success: false, error: err.message };
+    }
+}
+
+export async function cleanupDuplicateStaffDocuments(): Promise<{ removedCount: number }> {
+    if (!isAppOnline() || !isFirebaseConfigured() || firestoreTemporarilyDisabledUntilReload) {
+        return { removedCount: 0 };
+    }
+
+    try {
+        console.log('[STAFF_CLEANUP] Checking for duplicate staff records in Firestore...');
+        const staffRef = collection(db, 'staff');
+        const snapshot = await getDocs(staffRef);
+
+        if (snapshot.empty) return { removedCount: 0 };
+
+        const emailMap = new Map<string, Array<{ id: string; data: any }>>();
+
+        snapshot.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            const email = (data.email || '').toString().trim().toLowerCase();
+            const authUid = (data.authUid || '').toString().trim();
+
+            const key = email || (authUid ? `uid_${authUid}` : null);
+            if (!key) return;
+
+            if (!emailMap.has(key)) {
+                emailMap.set(key, []);
+            }
+            emailMap.get(key)!.push({ id: docSnap.id, data });
+        });
+
+        let removedCount = 0;
+
+        for (const [key, docs] of emailMap.entries()) {
+            if (docs.length <= 1) continue;
+
+            console.log(`[STAFF_CLEANUP] Found ${docs.length} duplicates for staff key "${key}":`, docs.map(d => d.id));
+
+            const primaryDoc = docs.reduce((best, current) => {
+                const currentAuthUid = current.data.authUid;
+                const bestAuthUid = best.data.authUid;
+
+                if (current.id === currentAuthUid) return current;
+                if (best.id === bestAuthUid) return best;
+
+                if (current.data.role === 'admin' && best.data.role !== 'admin') return current;
+                if (best.data.role === 'admin' && current.data.role !== 'admin') return best;
+
+                if (currentAuthUid && !bestAuthUid) return current;
+                if (bestAuthUid && !currentAuthUid) return best;
+
+                return best;
+            }, docs[0]);
+
+            const anyAuthUid = docs.find(d => d.data.authUid)?.data.authUid;
+            if (anyAuthUid && primaryDoc.data.authUid !== anyAuthUid) {
+                try {
+                    await updateDoc(doc(db, 'staff', primaryDoc.id), { authUid: anyAuthUid });
+                } catch {}
+            }
+
+            for (const duplicateDoc of docs) {
+                if (duplicateDoc.id === primaryDoc.id) continue;
+
+                console.log(`[STAFF_CLEANUP] Deleting duplicate staff document from Firestore: ${duplicateDoc.id}`);
+                try {
+                    await deleteDoc(doc(db, 'staff', duplicateDoc.id));
+                    removedCount++;
+                } catch (delErr) {
+                    console.warn(`[STAFF_CLEANUP] Failed to delete document ${duplicateDoc.id}:`, delErr);
+                }
+
+                try {
+                    const { db: localDB } = await import('./db');
+                    await localDB.staff.delete(duplicateDoc.id);
+                } catch {}
+            }
+        }
+
+        console.log(`[STAFF_CLEANUP] Complete! Total duplicate documents removed: ${removedCount}`);
+        return { removedCount };
+    } catch (err) {
+        console.warn('[STAFF_CLEANUP] Error cleaning duplicate staff documents:', err);
+        return { removedCount: 0 };
     }
 }

@@ -55,14 +55,17 @@ interface RepairDetailModalProps {
 const STATUS_ACTIONS: Record<RepairStatus, { label: { fr: string; ar: string; en: string }; nextStatus: RepairStatus; color: string }[]> = {
   deposited: [
     { label: { fr: 'Commencer le diagnostic', ar: 'بدء التشخيص', en: 'Start Diagnosis' }, nextStatus: 'diagnosing', color: '#0057FF' },
+    { label: { fr: 'Déclarer Hors Service', ar: 'تحديد كـ خارج الخدمة', en: 'Declare Out of Service' }, nextStatus: 'out_of_service', color: '#dc2626' },
   ],
   diagnosing: [
     { label: { fr: 'Diagnostic terminé (Devis)', ar: 'تم التشخيص', en: 'Diagnosis Completed (Quote)' }, nextStatus: 'waiting_approval', color: '#ea580c' },
     { label: { fr: 'Réparer directement', ar: 'إصلاح مباشر', en: 'Repair Directly' }, nextStatus: 'repairing', color: '#2563eb' },
+    { label: { fr: 'Hors Service (Non réparable)', ar: 'خارج الخدمة (غير قابل للإصلاح)', en: 'Out of Service (Unrepairable)' }, nextStatus: 'out_of_service', color: '#dc2626' },
   ],
   waiting_approval: [
     { label: { fr: 'Client approuve le devis', ar: 'العميل يوافق', en: 'Client Approved Quote' }, nextStatus: 'approved', color: '#16a34a' },
     { label: { fr: 'Client refuse le devis', ar: 'العميل يرفض', en: 'Client Rejected Quote' }, nextStatus: 'cancelled', color: '#dc2626' },
+    { label: { fr: 'Déclarer Hors Service', ar: 'تحديد كـ خارج الخدمة', en: 'Declare Out of Service' }, nextStatus: 'out_of_service', color: '#dc2626' },
   ],
   approved: [
     { label: { fr: 'Commencer la réparation', ar: 'بدء الإصلاح', en: 'Start Repair' }, nextStatus: 'repairing', color: '#2563eb' },
@@ -70,9 +73,11 @@ const STATUS_ACTIONS: Record<RepairStatus, { label: { fr: string; ar: string; en
   repairing: [
     { label: { fr: 'En attente de pièces', ar: 'في انتظار القطع', en: 'Waiting for Parts' }, nextStatus: 'waiting_parts', color: '#ca8a04' },
     { label: { fr: 'Réparation terminée', ar: 'تم الإصلاح', en: 'Repair Completed' }, nextStatus: 'completed', color: '#16a34a' },
+    { label: { fr: 'Non réparable (Hors Service)', ar: 'غير قابل للإصلاح (خارج الخدمة)', en: 'Unrepairable (Out of Service)' }, nextStatus: 'out_of_service', color: '#dc2626' },
   ],
   waiting_parts: [
     { label: { fr: 'Pièces reçues — Reprendre', ar: 'استئناف الإصلاح', en: 'Parts Received — Resume' }, nextStatus: 'repairing', color: '#2563eb' },
+    { label: { fr: 'Pièces introuvables (Hors Service)', ar: 'تعذر توفير القطع (خارج الخدمة)', en: 'Out of Service' }, nextStatus: 'out_of_service', color: '#dc2626' },
   ],
   completed: [
     { label: { fr: 'Contacter le client', ar: 'الاتصال بالعميل', en: 'Contact Client' }, nextStatus: 'notified', color: '#059669' },
@@ -85,6 +90,11 @@ const STATUS_ACTIONS: Record<RepairStatus, { label: { fr: string; ar: string; en
   unreachable: [
     { label: { fr: 'Relancer appel client', ar: 'إعادة المحاولة', en: 'Retry Calling Client' }, nextStatus: 'notified', color: '#059669' },
     { label: { fr: 'Client a récupéré', ar: 'تم التسليم', en: 'Device Picked Up' }, nextStatus: 'picked_up', color: '#64748b' },
+  ],
+  out_of_service: [
+    { label: { fr: 'Notifier le client (Prêt au retrait)', ar: 'إعلام العميل (جاهز للاسترجاع)', en: 'Notify Client' }, nextStatus: 'notified', color: '#059669' },
+    { label: { fr: 'Client a récupéré (Non réparé)', ar: 'استلم العميل الجهاز (غير مصلح)', en: 'Device Picked Up (Unrepaired)' }, nextStatus: 'picked_up', color: '#64748b' },
+    { label: { fr: 'Reprendre le diagnostic', ar: 'إعادة فتح التشخيص', en: 'Resume Diagnosis' }, nextStatus: 'diagnosing', color: '#0057FF' },
   ],
   cancelled: [],
 };
@@ -279,7 +289,7 @@ export function RepairDetailModal({ repair: initialRepair, onClose, onUpdated }:
         .totals .grand { font-size: 1.15rem; font-weight: 800; color: #0055ff; border-top: 2px solid #1a1a2e; padding-top: 8px; margin-top: 8px; }
       </style>
     </head><body>
-      <div class="inv-header"><h1>NH TECH</h1><p style="font-size:0.75rem;color:#555">Facture de Réparation</p></div>
+      <div class="inv-header"><h1>NH TECH</h1><p style="font-size:0.75rem;color:#555">Facture de Réparation — SAV / Tech: 0770 54 72 57 • Commercial: 0770 54 72 25</p></div>
       <div class="inv-title">FACTURE RÉPARATION — ${repair.id}</div>
       <div class="inv-info">
         <div><strong>Client:</strong> ${repair.customerName}<br/><strong>Tél:</strong> ${repair.customerPhone}</div>
@@ -309,11 +319,33 @@ export function RepairDetailModal({ repair: initialRepair, onClose, onUpdated }:
             <Wrench size={22} color="#0057FF" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h3 className="nh-modal-title" style={{ fontSize: '1.2rem' }}>{repair.id}</h3>
-              <span className="repair-status-badge" style={{ background: conf.bg, color: conf.color }}>
-                {conf.label[language] || conf.label.fr}
-              </span>
+              <select
+                value={repair.status}
+                onChange={e => handleStatusChange(e.target.value as RepairStatus)}
+                disabled={saving}
+                className="nh-select"
+                title={isAr ? 'تغيير الحالة مباشرة' : 'Modifier l\'état du dossier'}
+                style={{
+                  width: 'auto',
+                  padding: '3px 12px',
+                  fontSize: '0.8rem',
+                  height: 28,
+                  borderRadius: 20,
+                  fontWeight: 800,
+                  background: conf.bg,
+                  color: conf.color,
+                  borderColor: conf.color,
+                  cursor: 'pointer'
+                }}
+              >
+                {Object.entries(REPAIR_STATUS_CONFIG).map(([stKey, stConf]) => (
+                  <option key={stKey} value={stKey} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                    {stConf.label[language] || stConf.label.fr}
+                  </option>
+                ))}
+              </select>
             </div>
             <p className="nh-modal-subtitle">
               {isAr ? 'تفاصيل ملف الصيانة ومتابعة الحالة' : 'Gestion du dossier de réparation & suivi technique'}

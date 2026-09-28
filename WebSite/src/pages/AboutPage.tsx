@@ -27,8 +27,8 @@ export default function AboutPage() {
           </h1>
           <p className="subtitle" style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
             {lang === 'ar' 
-              ? 'إن إتش تيك لتجميع حواسيب الألعاب وصيانة العتاد — بوزريعة، الجزائر العاصمة' 
-              : 'NH TECH — High-End PC Builder & Hardware SAV — Bouzaréah, Alger'}
+              ? 'إن إتش تيك لتجميع حواسيب الألعاب وصيانة العتاد — باب الزوار، الجزائر العاصمة' 
+              : 'NH TECH — High-End PC Builder & Hardware SAV — Bab Ezzouar, Alger'}
           </p>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function AboutPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.925rem', fontWeight: 600 }}>
                     <CheckCircle size={18} color="var(--cyan)" />
-                    <span>{lang === 'ar' ? 'محل وورشة بـ بوزريعة، العاصمة' : 'Atelier & Magasin à Bouzaréah'}</span>
+                    <span>{lang === 'ar' ? 'محل وورشة بـ باب الزوار، العاصمة' : 'Atelier & Magasin à Bab Ezzouar'}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.925rem', fontWeight: 600 }}>
                     <CheckCircle size={18} color="var(--cyan)" />
@@ -88,8 +88,8 @@ export default function AboutPage() {
                   <MapPin size={18} style={{ color: 'var(--cyan)' }} />
                   <span>
                     {lang === 'ar'
-                      ? 'المقر الرئيسي: بوزريعة، الجزائر العاصمة'
-                      : 'Siège social : Bouzaréah, Alger, Algérie'}
+                      ? 'المقر الرئيسي: باب الزوار، الجزائر العاصمة'
+                      : 'Siège social : Bab Ezzouar, Alger, Algérie'}
                   </span>
                 </div>
               </div>

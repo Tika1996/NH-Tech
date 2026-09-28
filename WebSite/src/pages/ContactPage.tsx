@@ -5,6 +5,9 @@ import { MapPin, Phone, Mail, Clock, ArrowRight, Loader2, CheckCircle2, MessageS
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
+import { CONTACT_INFO } from '../lib/contact';
+import { Wrench, Briefcase } from 'lucide-react';
+
 export default function ContactPage() {
   const { lang, t } = useLanguage();
   const isAr = lang === 'ar';
@@ -51,27 +54,57 @@ export default function ContactPage() {
 
   const contactCards = [
     {
-      icon: MapPin,
-      title: isAr ? 'عنوان الورشة والمحل' : 'Adresse Atelier & Boutique',
-      detail: 'Bouzaréah, Alger, Algérie',
-      sub: isAr ? 'موقع سهل الوصول مع موقف سيارات متوفر' : 'Accès facile avec stationnement disponible',
+      icon: Phone,
+      title: isAr ? 'المصلحة التجارية والمبيعات' : 'Service Commercial & Ventes',
+      detail: CONTACT_INFO.commercial.phone,
+      isPhone: true,
+      sub: isAr ? CONTACT_INFO.commercial.desc.ar : CONTACT_INFO.commercial.desc.fr,
       color: '#0055FF',
       bg: 'rgba(0, 85, 255, 0.08)',
       action: {
-        label: isAr ? 'الاتجاهات (Maps)' : 'Google Maps',
-        url: 'https://maps.google.com/?q=Bouzareah,Alger'
+        label: isAr ? 'اتصال بالمبيعات' : 'Appeler Commercial',
+        url: `tel:${CONTACT_INFO.commercial.rawPhone}`,
+        whatsappUrl: CONTACT_INFO.commercial.whatsapp
       }
     },
     {
-      icon: Phone,
-      title: isAr ? 'الهاتف والمبيعات' : 'Téléphone Vente & SAV',
-      detail: '0550 12 34 56 / 0770 99 88 77',
-      sub: isAr ? 'متاحون من السبت إلى الخميس (9h - 19h)' : 'Disponibles du Samedi au Jeudi (9h - 19h)',
+      icon: Wrench,
+      title: isAr ? 'المصلحة التقنية والصيانة (SAV)' : 'Service Technique & SAV',
+      detail: CONTACT_INFO.technique.phone,
+      isPhone: true,
+      sub: isAr ? CONTACT_INFO.technique.desc.ar : CONTACT_INFO.technique.desc.fr,
       color: '#10B981',
       bg: 'rgba(16, 185, 129, 0.08)',
       action: {
-        label: isAr ? 'اتصل الآن' : 'Appeler',
-        url: 'tel:0550123456'
+        label: isAr ? 'اتصال بالصيانة' : 'Appeler SAV',
+        url: `tel:${CONTACT_INFO.technique.rawPhone}`,
+        whatsappUrl: CONTACT_INFO.technique.whatsapp
+      }
+    },
+    {
+      icon: Briefcase,
+      title: isAr ? 'الإدارة العامة (Manager)' : 'Direction / Manager',
+      detail: CONTACT_INFO.manager.phone,
+      isPhone: true,
+      sub: isAr ? CONTACT_INFO.manager.desc.ar : CONTACT_INFO.manager.desc.fr,
+      color: '#F59E0B',
+      bg: 'rgba(245, 158, 11, 0.08)',
+      action: {
+        label: isAr ? 'اتصال بالإدارة' : 'Appeler Direction',
+        url: `tel:${CONTACT_INFO.manager.rawPhone}`,
+        whatsappUrl: CONTACT_INFO.manager.whatsapp
+      }
+    },
+    {
+      icon: MapPin,
+      title: isAr ? 'عنوان الورشة والمحل' : 'Adresse Atelier & Boutique',
+      detail: isAr ? CONTACT_INFO.address.ar : CONTACT_INFO.address.fr,
+      sub: isAr ? 'موقع سهل الوصول مع موقف سيارات متوفر' : 'Accès facile avec stationnement disponible',
+      color: '#8B5CF6',
+      bg: 'rgba(139, 92, 246, 0.08)',
+      action: {
+        label: isAr ? 'الاتجاهات (Maps)' : 'Google Maps',
+        url: CONTACT_INFO.mapUrl
       }
     },
     {
@@ -79,8 +112,8 @@ export default function ContactPage() {
       title: isAr ? 'البريد الإلكتروني' : 'Email Support & Devis',
       detail: 'contact@nhtech.dz',
       sub: isAr ? 'إجابة مفصلة واستشارات فنية خلال 24 سا' : 'Réponse sous 24h pour devis et questions',
-      color: '#8B5CF6',
-      bg: 'rgba(139, 92, 246, 0.08)',
+      color: '#EC4899',
+      bg: 'rgba(236, 72, 153, 0.08)',
       action: {
         label: isAr ? 'راسلنا' : 'Envoyer Email',
         url: 'mailto:contact@nhtech.dz'
@@ -91,8 +124,8 @@ export default function ContactPage() {
       title: isAr ? 'أوقات العمل' : 'Horaires d\'Ouverture',
       detail: isAr ? 'السبت – الخميس : 9:00 – 19:00' : 'Samedi – Jeudi : 9h00 – 19h00',
       sub: isAr ? 'الجمعة : مغلق (استقبال الطلبات أونلاين 24/7)' : 'Vendredi : Fermé (Site web ouvert 24/7)',
-      color: '#F59E0B',
-      bg: 'rgba(245, 158, 11, 0.08)'
+      color: '#06B6D4',
+      bg: 'rgba(6, 182, 212, 0.08)'
     }
   ];
 
@@ -183,7 +216,13 @@ export default function ContactPage() {
                           {card.title}
                         </h4>
                         <div style={{ fontSize: '1.02rem', fontWeight: 800, color: '#0055FF', marginBottom: '2px' }}>
-                          {card.detail}
+                          {card.isPhone ? (
+                            <bdi dir="ltr" className="phone-number" style={{ direction: 'ltr', unicodeBidi: 'isolate', display: 'inline-block' }}>
+                              {card.detail}
+                            </bdi>
+                          ) : (
+                            <span>{card.detail}</span>
+                          )}
                         </div>
                         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
                           {card.sub}
@@ -251,28 +290,53 @@ export default function ContactPage() {
                     {isAr ? 'إجابة سريعة من الفنيين للتجميعات والاستفسارات في أقل من 15 دقيقة.' : 'Réponse directe de nos techniciens pour vos devis & configs en moins de 15 minutes.'}
                   </p>
                 </div>
-                <a
-                  href="https://wa.me/213550123456"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    background: '#FFFFFF',
-                    color: '#128C7E',
-                    fontWeight: 900,
-                    padding: '12px 22px',
-                    borderRadius: '16px',
-                    fontSize: '0.9rem',
-                    textDecoration: 'none',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <span>{isAr ? 'محادثة مباشرة' : 'Discuter sur WhatsApp'}</span>
-                  <ArrowRight size={16} />
-                </a>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <a
+                    href={CONTACT_INFO.commercial.whatsapp}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      background: '#FFFFFF',
+                      color: '#128C7E',
+                      fontWeight: 800,
+                      padding: '10px 18px',
+                      borderRadius: '14px',
+                      fontSize: '0.85rem',
+                      textDecoration: 'none',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <span>{isAr ? 'واتساب مبيعات (Commercial)' : 'WhatsApp Commercial'}</span>
+                    <ArrowRight size={14} />
+                  </a>
+
+                  <a
+                    href={CONTACT_INFO.technique.whatsapp}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.18)',
+                      color: '#FFFFFF',
+                      border: '1.5px solid rgba(255, 255, 255, 0.6)',
+                      fontWeight: 800,
+                      padding: '10px 18px',
+                      borderRadius: '14px',
+                      fontSize: '0.85rem',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <span>{isAr ? 'واتساب صيانة (SAV)' : 'WhatsApp SAV / Tech'}</span>
+                    <ArrowRight size={14} />
+                  </a>
+                </div>
               </div>
 
               {/* Visual Map / Location Box */}
@@ -307,7 +371,7 @@ export default function ContactPage() {
                 }}>
                   <iframe
                     title="NH TECH Location Map"
-                    src="https://maps.google.com/maps?q=Bouzareah,Algiers,Algeria&t=&z=14&ie=UTF8&iwloc=&output=embed"
+                    src={CONTACT_INFO.mapEmbedUrl}
                     width="100%"
                     height="100%"
                     style={{ border: 0, filter: 'contrast(1.05)' }}
@@ -316,7 +380,7 @@ export default function ContactPage() {
                 </div>
 
                 <a
-                  href="https://maps.google.com/?q=Bouzareah,Alger"
+                  href={CONTACT_INFO.mapUrl}
                   target="_blank"
                   rel="noreferrer"
                   style={{

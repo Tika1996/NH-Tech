@@ -11,12 +11,14 @@ export const BRAND = {
     },
     company: {
         name: 'NH TECH Hardware & Repair',
-        address: 'Alger, Algérie',
-        phone: '0550 00 00 00',
-        email: 'contact@nhtech.com',
-        website: 'www.nhtech.com',
-    phone2: '0656 14 11 96',
-  },
+        address: 'Bab Ezzouar, Alger, Algérie',
+        phone: '0770 54 72 25',
+        phoneCommercial: '0770 54 72 25',
+        phoneTechnique: '0770 54 72 57',
+        phoneManager: '0770 54 72 30',
+        email: 'contact@nhtech.dz',
+        website: 'www.nhtech.dz',
+    },
   version: '1.0.0',
 
   logos: {

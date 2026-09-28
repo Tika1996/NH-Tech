@@ -26,6 +26,7 @@
 .repair-status-picked_up { background: rgba(148,163,184,0.14); color: #64748b; border: 1px solid rgba(148,163,184,0.3); }
 .repair-status-unreachable { background: rgba(239,68,68,0.14); color: #dc2626; border: 1px solid rgba(239,68,68,0.3); }
 .repair-status-cancelled { background: rgba(100,116,139,0.14); color: #475569; border: 1px solid rgba(100,116,139,0.3); }
+.repair-status-out_of_service { background: rgba(239,68,68,0.16); color: #dc2626; border: 1px solid rgba(239,68,68,0.35); }
 
 /* ============================================================
    HIGH-END MODERN CYBER MODAL SYSTEM — PERFECT DUAL THEME CONTRAST

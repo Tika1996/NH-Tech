@@ -93,7 +93,7 @@ export function MainLayout() {
 
         .page-content {
           flex: 1;
-          padding: var(--space-8);
+          padding: 20px;
           background: var(--bg-secondary);
           overflow-x: auto;
           min-width: 0;

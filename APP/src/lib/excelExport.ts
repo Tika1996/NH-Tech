@@ -1,22 +1,38 @@
 import * as XLSX from 'xlsx';
 
+export interface ExcelColumn {
+  header: string;
+  key: string;
+  width?: number;
+}
+
 export interface ExcelExportOptions {
   filename: string;
   sheetName?: string;
-  headers: string[];
-  rows: (string | number | boolean | null | undefined)[][];
+  headers?: string[];
+  rows?: (string | number | boolean | null | undefined)[][];
+  columns?: ExcelColumn[];
+  data?: Record<string, any>[];
 }
 
 /**
  * Generates and triggers download of a native Microsoft Excel (.xlsx) file.
  */
-export function exportToExcel({
-  filename,
-  sheetName = 'Données',
-  headers,
-  rows,
-}: ExcelExportOptions): void {
+export function exportToExcel(options: ExcelExportOptions): void {
   try {
+    const { filename, sheetName = 'Données' } = options;
+
+    let headers: string[] = [];
+    let rows: (string | number | boolean | null | undefined)[][] = [];
+
+    if (options.columns && options.data) {
+      headers = options.columns.map(c => c.header);
+      rows = options.data.map(item => options.columns!.map(col => item[col.key]));
+    } else if (options.headers && options.rows) {
+      headers = options.headers;
+      rows = options.rows;
+    }
+
     const data = [headers, ...rows];
     const worksheet = XLSX.utils.aoa_to_sheet(data);
 

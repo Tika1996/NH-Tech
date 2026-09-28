@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
-import { CreditCard, ShieldCheck } from 'lucide-react';
+import { CreditCard, ShieldCheck, Phone, Wrench, Briefcase, MapPin } from 'lucide-react';
+import { CONTACT_INFO } from '../lib/contact';
 
 export default function Footer() {
   const { t, lang } = useLanguage();
@@ -64,19 +65,53 @@ export default function Footer() {
             <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px', color: '#FFFFFF' }}>{isAr ? 'المؤسسة' : 'Entreprise'}</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#94A3B8' }}>
               <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'عن المحل' : 'À propos'}</Link></li>
-              <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'تقنيونا' : 'Nos techniciens'}</Link></li>
               <li><Link to="/contact" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'اتصل بنا' : 'Contact'}</Link></li>
+              <li><Link to="/contact" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'تتبع الصيانة' : 'Suivi SAV'}</Link></li>
             </ul>
           </div>
 
-          {/* Col 4: Support */}
+          {/* Col 4: Contact & Support */}
           <div className="footer-col">
-            <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px', color: '#FFFFFF' }}>{isAr ? 'الدعم' : 'Support'}</h4>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 800, marginBottom: '16px', color: '#FFFFFF' }}>{isAr ? 'الاتصال والمساعدة' : 'Contact & Lignes Directes'}</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#94A3B8' }}>
-              <li><Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>FAQ</Link></li>
-              <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'الشروط العامة' : 'Conditions générales'}</Link></li>
-              <li><Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'سياسة الإرجاع' : 'Politique de retour'}</Link></li>
-              <li><Link to="/contact" style={{ color: 'inherit', textDecoration: 'none' }}>{isAr ? 'الدعم الفني' : 'Support en ligne'}</Link></li>
+              <li>
+                <a href={`tel:${CONTACT_INFO.commercial.rawPhone}`} style={{ color: '#00F0FF', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <Phone size={14} color="#00F0FF" />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{isAr ? 'المبيعات:' : 'Commercial:'}</span>
+                    <bdi dir="ltr" className="phone-number" style={{ direction: 'ltr', unicodeBidi: 'isolate', fontWeight: 800 }}>{CONTACT_INFO.commercial.phone}</bdi>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href={`tel:${CONTACT_INFO.technique.rawPhone}`} style={{ color: '#10B981', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <Wrench size={14} color="#10B981" />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{isAr ? 'الصيانة:' : 'SAV / Tech:'}</span>
+                    <bdi dir="ltr" className="phone-number" style={{ direction: 'ltr', unicodeBidi: 'isolate', fontWeight: 800 }}>{CONTACT_INFO.technique.phone}</bdi>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href={`tel:${CONTACT_INFO.manager.rawPhone}`} style={{ color: '#F59E0B', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <Briefcase size={14} color="#F59E0B" />
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{isAr ? 'الإدارة:' : 'Direction:'}</span>
+                    <bdi dir="ltr" className="phone-number" style={{ direction: 'ltr', unicodeBidi: 'isolate', fontWeight: 800 }}>{CONTACT_INFO.manager.phone}</bdi>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href={CONTACT_INFO.mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94A3B8', fontSize: '0.8rem', marginTop: '4px', textDecoration: 'none' }}
+                >
+                  <MapPin size={14} color="#0055FF" />
+                  <span>{isAr ? CONTACT_INFO.address.ar : CONTACT_INFO.address.fr}</span>
+                </a>
+              </li>
             </ul>
           </div>
 

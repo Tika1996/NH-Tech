@@ -345,16 +345,6 @@ export function CommandesPage() {
 
     try {
       await set<PosSaleTransaction>('invoices', invoiceId, invoiceData);
-
-      const hasLaptops = itemsWithProfit.some(i => i.productType === 'laptop');
-      const hasPieces = itemsWithProfit.some(i => i.productType === 'piece');
-
-      if (hasLaptops) {
-        await set<PosSaleTransaction>('transactions_laptops', invoiceId, invoiceData);
-      }
-      if (hasPieces) {
-        await set<PosSaleTransaction>('transactions_pieces', invoiceId, invoiceData);
-      }
     } catch (e) {
       console.warn('Invoice sync notice:', e);
     }
@@ -1299,19 +1289,19 @@ export function CommandesPage() {
 
       <style>{`
         .commandes-page-container {
-          padding: 32px;
-          max-width: 1400px;
-          margin: 0 auto;
+          padding: 0;
+          max-width: 100%;
+          margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 16px;
         }
 
         .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 
         .page-title {
           font-family: var(--font-display);
-          font-size: var(--text-4xl);
+          font-size: 1.8rem;
           font-weight: 800;
           margin: 0;
           display: flex;
@@ -1368,6 +1358,45 @@ export function CommandesPage() {
         .filters-group select {
           padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-secondary);
           background: var(--bg-tertiary); color: var(--text-primary); font-size: 0.82rem; outline: none;
+        }
+
+        @media (max-width: 768px) {
+          .commandes-page-container {
+            padding: 12px 8px;
+            margin: 0;
+            width: 100%;
+            max-width: 100vw;
+            box-sizing: border-box;
+            gap: 14px;
+          }
+
+          .toolbar-card {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .search-box {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .search-box input {
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .filters-group {
+            width: 100%;
+          }
+
+          .filters-group select {
+            width: 100%;
+            box-sizing: border-box;
+          }
         }
 
         /* Table Card */

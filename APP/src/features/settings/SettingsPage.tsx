@@ -35,9 +35,11 @@ export function SettingsPage() {
 
   const [companyInfo, setCompanyInfo] = useState({
     name: 'NH TECH Hardware & Repair',
-    address: 'Alger, Algérie',
-    phone: '0550 00 00 00',
-    email: 'contact@nhtech.com',
+    address: 'Bab Ezzouar, Alger, Algérie',
+    phoneCommercial: '0770 54 72 25',
+    phoneTechnique: '0770 54 72 57',
+    phoneManager: '0770 54 72 30',
+    email: 'contact@nhtech.dz',
     taxId: 'NIF/NIS (optionnel)'
   });
 
@@ -128,26 +130,46 @@ export function SettingsPage() {
               />
             </div>
 
-            <div className="form-grid-2">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px' }}>
               <div className="form-field">
-                <label>{isAr ? 'الهاتف' : 'Téléphone'}</label>
+                <label>{isAr ? 'هاتف المبيعات (Commercial)' : 'Tél Commercial / Vente'}</label>
                 <input
                   type="text"
                   className="input-field"
-                  value={companyInfo.phone}
-                  onChange={(e) => setCompanyInfo({ ...companyInfo, phone: e.target.value })}
+                  value={companyInfo.phoneCommercial}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, phoneCommercial: e.target.value })}
                 />
               </div>
 
               <div className="form-field">
-                <label>{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
+                <label>{isAr ? 'هاتف الصيانة (SAV / Tech)' : 'Tél SAV / Technique'}</label>
                 <input
-                  type="email"
+                  type="text"
                   className="input-field"
-                  value={companyInfo.email}
-                  onChange={(e) => setCompanyInfo({ ...companyInfo, email: e.target.value })}
+                  value={companyInfo.phoneTechnique}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, phoneTechnique: e.target.value })}
                 />
               </div>
+
+              <div className="form-field">
+                <label>{isAr ? 'هاتف الإدارة (Manager)' : 'Tél Direction / Manager'}</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={companyInfo.phoneManager}
+                  onChange={(e) => setCompanyInfo({ ...companyInfo, phoneManager: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-field">
+              <label>{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
+              <input
+                type="email"
+                className="input-field"
+                value={companyInfo.email}
+                onChange={(e) => setCompanyInfo({ ...companyInfo, email: e.target.value })}
+              />
             </div>
 
             <div className="form-field">
@@ -433,7 +455,7 @@ export function SettingsPage() {
         .settings-page-container {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 16px;
         }
 
         .page-top-bar {

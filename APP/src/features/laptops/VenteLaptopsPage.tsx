@@ -115,18 +115,14 @@ export function VenteLaptopsPage() {
     }).catch(err => console.warn('Laptops load notice:', err));
 
     Promise.all([
-      getAll<PosSaleTransaction>('transactions_laptops').catch(() => []),
       getAll<PosSaleTransaction>('invoices').catch(() => []),
       getAll<any>('orders').catch(() => []),
-    ]).then(([txs, invs, ords]) => {
+    ]).then(([invs, ords]) => {
       if (!isMounted) return;
       const combinedMap = new Map<string, any>();
 
-      // Merge transactions with invoices (invoices take priority for status/refund updates!)
+      // Invoices is the canonical sales collection for status & refund updates
       (invs || []).forEach((inv: any) => combinedMap.set(inv.id, inv));
-      (txs || []).forEach((t: any) => {
-        if (!combinedMap.has(t.id)) combinedMap.set(t.id, t);
-      });
       (ords || []).forEach((ord: any) => {
         const invMatch = (invs || []).find((inv: any) => inv.orderId === ord.id || inv.id === ord.id || inv.id === `FAC-WEB-${ord.id.replace(/^CMD-WEB-?/i, '')}`);
         if (invMatch) return; // Managed via invoice!
@@ -399,7 +395,6 @@ export function VenteLaptopsPage() {
     setTransactions([transaction, ...transactions]);
 
     try {
-      await set<PosSaleTransaction>('transactions_laptops', transaction.id, transaction);
       await set<PosSaleTransaction>('invoices', transaction.id, transaction);
     } catch (err) {
       console.warn('Transaction persist error:', err);
@@ -443,7 +438,6 @@ export function VenteLaptopsPage() {
 
     if (updatedTxTarget) {
       try {
-        await set<PosSaleTransaction>('transactions_laptops', transactionId, updatedTxTarget);
         await set<PosSaleTransaction>('invoices', transactionId, updatedTxTarget);
       } catch (err) {
         console.warn('Return tx persist error:', err);
@@ -1214,7 +1208,7 @@ export function VenteLaptopsPage() {
         .laptops-page-container {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 16px;
         }
 
         .page-top-bar {

@@ -937,13 +937,22 @@ h6 {
 /* ============================================================
    NH TECH - FACTURES & SHARED DASHBOARD PAGE DESIGN SYSTEM
    ============================================================ */
-.factures-page-container {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+.factures-page-container,
+.laptops-page-container,
+.pieces-page-container,
+.orders-page-container,
+.commandes-page-container,
+.repairs-page-container,
+.clients-page-container,
+.rh-page-container,
+.dashboard-page-container,
+.settings-page-container {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .page-header-row {
@@ -955,7 +964,7 @@ h6 {
 
 .page-title {
   font-family: var(--font-display);
-  font-size: var(--text-4xl);
+  font-size: 1.8rem;
   font-weight: 800;
   margin: 0;
   display: flex;
@@ -968,27 +977,27 @@ h6 {
 
 .page-subtitle {
   color: var(--text-secondary);
-  margin: 6px 0 0 0;
-  font-size: var(--text-base);
+  margin: 4px 0 0 0;
+  font-size: 0.88rem;
 }
 
 /* KPI Grid */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 
 .kpi-card {
   background: var(--bg-elevated);
   border: 1px solid var(--border-secondary);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   transition: all 0.2s;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
@@ -1232,4 +1241,213 @@ h6 {
   border-color: #0055ff;
   color: #0055ff;
   box-shadow: 0 4px 14px rgba(0, 85, 255, 0.15);
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE UI & UX OVERRIDES (max-width: 768px)
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* Page Container Padding & Overflow Prevention (Fixes Large Side Margins) */
+  .factures-page-container,
+  .laptops-page-container,
+  .pieces-page-container,
+  .orders-page-container,
+  .commandes-page-container,
+  .repairs-page-container,
+  .clients-page-container,
+  .rh-page-container,
+  .dashboard-page-container,
+  .settings-page-container {
+    padding: 12px 8px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Header Row & Title */
+  .page-header-row,
+  .header-actions-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .page-title {
+    font-size: 1.3rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .page-subtitle {
+    font-size: 0.78rem !important;
+    margin-top: 4px !important;
+  }
+
+  /* Header Action Buttons Container */
+  .top-right-actions,
+  .header-actions,
+  .page-header-actions,
+  .page-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .top-right-actions button,
+  .top-right-actions a,
+  .header-actions button,
+  .page-actions button,
+  .export-btn,
+  .add-btn,
+  .store-sale-btn,
+  .btn-primary-action,
+  .btn-excel-export {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    padding: 8px 12px !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* KPI Grid & Cards */
+  .kpi-grid,
+  .laptops-kpi-grid,
+  .pieces-kpi-grid,
+  .dashboard-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .kpi-card {
+    padding: 10px 8px !important;
+    gap: 8px !important;
+    border-radius: 14px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .kpi-icon,
+  .kpi-icon-circle {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .kpi-icon svg,
+  .kpi-icon-circle svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .kpi-info,
+  .kpi-details {
+    min-width: 0 !important;
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .kpi-label,
+  .kpi-title {
+    font-size: 0.65rem !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .kpi-value,
+  .kpi-number {
+    font-size: 1.05rem !important;
+    margin: 1px 0 !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    line-height: 1.2 !important;
+  }
+
+  .kpi-sub,
+  .kpi-subtext {
+    font-size: 0.6rem !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+  }
+
+  /* Main Navigation Tabs Bar */
+  .main-tabs-header-bar {
+    gap: 6px !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 12px !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+  }
+
+  .main-nav-tab {
+    padding: 8px 12px !important;
+    font-size: 0.78rem !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    border-radius: 10px !important;
+  }
+
+  /* Filters & Search Toolbar Cards (Fixes Search Box Sticking Out of Div) */
+  .toolbar-card,
+  .filters-card,
+  .filters-sidebar-card,
+  .search-filter-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    border-radius: 16px !important;
+  }
+
+  .search-box,
+  .search-input-wrapper,
+  .filter-group,
+  .filters-group {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+    gap: 8px !important;
+  }
+
+  .search-box input,
+  .filters-group select,
+  .filter-group select,
+  .filter-group input,
+  .search-box select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    font-size: 0.82rem !important;
+  }
+
+  .laptops-main-layout,
+  .pieces-main-layout {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
 }

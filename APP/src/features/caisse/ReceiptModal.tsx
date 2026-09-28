@@ -160,6 +160,9 @@ export function ReceiptModal({
                             <img src={logoUrl} alt={BRAND.name[language]} className="receipt-logo" />
                             <h2>{BRAND.name[language]}</h2>
                             <p>{BRAND.subtitle[language]}</p>
+                            <p style={{ fontSize: '11px', color: '#555', marginTop: '3px', fontWeight: 'bold' }}>
+                                Tél: 0770 54 72 25 / 0770 54 72 57
+                            </p>
                         </div>
 
                         <div className="divider" />

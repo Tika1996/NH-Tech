@@ -14,6 +14,7 @@ export interface Customer {
   totalSpent: number;
   purchaseCount: number;
   createdAt: string;
+  isDeleted?: boolean;
 }
 
 const DEFAULT_CLIENTS_SEED: Customer[] = [];
@@ -21,6 +22,16 @@ const DEFAULT_CLIENTS_SEED: Customer[] = [];
 let globalCustomersList: Customer[] = [];
 let isLoaded = false;
 const listeners = new Set<() => void>();
+const deletedCustomerKeys = new Set<string>();
+
+const DEMO_CLIENT_NAMES = [
+  'karim benali',
+  'sarl hightech solutions',
+  'amine gamer store',
+  'yacine mansouri',
+  'société informatique al-djazair',
+  'societe informatique al-djazair'
+];
 
 function notify() {
   listeners.forEach(fn => fn());
@@ -33,10 +44,39 @@ export async function loadCustomersFromFirebase(): Promise<Customer[]> {
     const storedCustomers = Array.isArray(data) ? data : [];
     const customerMap = new Map<string, Customer>();
 
-    // 1. Load stored customers
+    // 1. Load stored customers and identify soft-deleted tombstones
     storedCustomers.forEach(c => {
       const key = (c.phone || c.name || '').toLowerCase().replace(/\s+/g, '');
-      if (key) customerMap.set(key, c);
+      const idKey = c.id ? c.id.toLowerCase() : '';
+
+      const isDemo = DEMO_CLIENT_NAMES.some(d => (c.name || '').toLowerCase().includes(d)) ||
+                     (c.email || '').includes('hightech-sol.dz') ||
+                     (c.email || '').includes('info-djazair.dz');
+
+      if (c.isDeleted || isDemo) {
+        if (key) deletedCustomerKeys.add(key);
+        if (idKey) deletedCustomerKeys.add(idKey);
+        // Persist tombstone if it was a demo client
+        if (isDemo && !c.isDeleted && c.id) {
+          set<Customer>('customers', c.id, { ...c, isDeleted: true }).catch(() => {});
+        }
+      } else {
+        if (key) {
+          customerMap.set(key, {
+            ...c,
+            name: (c.name || 'Client').trim(),
+            phone: c.phone || '',
+            email: c.email || '',
+            address: c.address || '',
+            type: c.type || 'particulier',
+            source: c.source || 'magasin',
+            notes: c.notes || '',
+            totalSpent: typeof c.totalSpent === 'number' ? c.totalSpent : (Number(c.totalSpent) || 0),
+            purchaseCount: typeof c.purchaseCount === 'number' ? c.purchaseCount : (Number(c.purchaseCount) || 0),
+            createdAt: c.createdAt || new Date().toLocaleDateString('fr-FR'),
+          });
+        }
+      }
     });
 
     // 2. Auto-extract clients from POS Invoices
@@ -46,6 +86,11 @@ export async function loadCustomersFromFirebase(): Promise<Customer[]> {
         const name = (inv.customerName || '').trim();
         if (!name || name.toLowerCase() === 'client comptoir') return;
         const key = (inv.customerPhone || name).toLowerCase().replace(/\s+/g, '');
+        if (deletedCustomerKeys.has(key)) return;
+
+        const isDemo = DEMO_CLIENT_NAMES.some(d => name.toLowerCase().includes(d));
+        if (isDemo) return;
+
         if (!customerMap.has(key)) {
           const isWeb = inv.channel === 'website';
           customerMap.set(key, {
@@ -76,6 +121,11 @@ export async function loadCustomersFromFirebase(): Promise<Customer[]> {
         const name = (ord.customerName || '').trim();
         if (!name) return;
         const key = (ord.customerPhone || name).toLowerCase().replace(/\s+/g, '');
+        if (deletedCustomerKeys.has(key)) return;
+
+        const isDemo = DEMO_CLIENT_NAMES.some(d => name.toLowerCase().includes(d));
+        if (isDemo) return;
+
         if (!customerMap.has(key)) {
           customerMap.set(key, {
             id: generateNextId(Array.from(customerMap.values()), 'CLT', false, 4),
@@ -101,6 +151,11 @@ export async function loadCustomersFromFirebase(): Promise<Customer[]> {
         const name = (rep.customerName || '').trim();
         if (!name) return;
         const key = (rep.customerPhone || name).toLowerCase().replace(/\s+/g, '');
+        if (deletedCustomerKeys.has(key)) return;
+
+        const isDemo = DEMO_CLIENT_NAMES.some(d => name.toLowerCase().includes(d));
+        if (isDemo) return;
+
         if (!customerMap.has(key)) {
           customerMap.set(key, {
             id: generateNextId(Array.from(customerMap.values()), 'CLT', false, 4),
@@ -119,7 +174,21 @@ export async function loadCustomersFromFirebase(): Promise<Customer[]> {
       });
     } catch (e) { }
 
-    globalCustomersList = Array.from(customerMap.values());
+    globalCustomersList = Array.from(customerMap.values())
+      .filter(c => !c.isDeleted)
+      .map(c => ({
+        ...c,
+        name: (c.name || 'Client').trim(),
+        phone: c.phone || '',
+        email: c.email || '',
+        address: c.address || '',
+        type: c.type || 'particulier',
+        source: c.source || 'magasin',
+        notes: c.notes || '',
+        totalSpent: typeof c.totalSpent === 'number' ? c.totalSpent : (Number(c.totalSpent) || 0),
+        purchaseCount: typeof c.purchaseCount === 'number' ? c.purchaseCount : (Number(c.purchaseCount) || 0),
+        createdAt: c.createdAt || new Date().toLocaleDateString('fr-FR'),
+      }));
     isLoaded = true;
 
     notify();
@@ -143,6 +212,15 @@ export function getCustomers(): Customer[] {
 export function addCustomer(customerData: Omit<Customer, 'id' | 'createdAt'>): Customer {
   const newCustomer: Customer = {
     ...customerData,
+    name: (customerData.name || 'Client').trim(),
+    phone: customerData.phone || '',
+    email: customerData.email || '',
+    address: customerData.address || '',
+    type: customerData.type || 'particulier',
+    source: customerData.source || 'magasin',
+    notes: customerData.notes || '',
+    totalSpent: typeof customerData.totalSpent === 'number' ? customerData.totalSpent : 0,
+    purchaseCount: typeof customerData.purchaseCount === 'number' ? customerData.purchaseCount : 0,
     id: generateNextId(globalCustomersList, 'CLT', false, 4),
     createdAt: new Date().toLocaleDateString('fr-FR')
   };
@@ -159,9 +237,44 @@ export function updateCustomer(id: string, patch: Partial<Customer>) {
 }
 
 export function deleteCustomer(id: string) {
+  const target = globalCustomersList.find(c => c.id === id);
+  if (target) {
+    const key = (target.phone || target.name || '').toLowerCase().replace(/\s+/g, '');
+    if (key) deletedCustomerKeys.add(key);
+    deletedCustomerKeys.add(id.toLowerCase());
+
+    const tombstoneDoc: Customer = { ...target, isDeleted: true };
+    set<Customer>('customers', id, tombstoneDoc).catch(err => console.warn('Customer delete error:', err));
+  } else {
+    remove('customers', id).catch(err => console.warn('Customer delete error:', err));
+  }
+
   globalCustomersList = globalCustomersList.filter(c => c.id !== id);
   notify();
-  remove('customers', id).catch(err => console.warn('Customer delete error:', err));
+}
+
+/**
+ * Purge all demo/mock customers permanently from local & remote storage
+ */
+export async function purgeDemoCustomers(): Promise<number> {
+  let purged = 0;
+  const toPurge = globalCustomersList.filter(c => {
+    const name = (c.name || '').toLowerCase();
+    const email = (c.email || '').toLowerCase();
+    return DEMO_CLIENT_NAMES.some(d => name.includes(d)) ||
+           email.includes('hightech-sol.dz') ||
+           email.includes('info-djazair.dz') ||
+           email.includes('karim.benali@gmail.com') ||
+           email.includes('amine.store@yahoo.fr') ||
+           email.includes('yacine.m@gmail.com');
+  });
+
+  toPurge.forEach(c => {
+    deleteCustomer(c.id);
+    purged++;
+  });
+
+  return purged;
 }
 
 /**

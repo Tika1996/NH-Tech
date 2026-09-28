@@ -281,31 +281,29 @@ export function LoginPage() {
         const isFirstUserEver = allExistingStaff.length === 0;
         const determinedRole = offlineUser?.role || (isFirstUserEver ? 'admin' : 'staff');
 
+        const fixedStaffId = uid;
+        const newStaffRecord = {
+          id: fixedStaffId,
+          name: displayName || (userEmail ? userEmail.split('@')[0] : 'Employé'),
+          email: userEmail,
+          role: determinedRole,
+          authUid: uid,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
         try {
-          const newId = await staffCollection.create({
-            name: displayName || (userEmail ? userEmail.split('@')[0] : 'Employé'),
-            email: userEmail,
-            role: determinedRole,
-            authUid: uid,
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-          staffDoc = {
-            id: newId,
-            name: displayName || (userEmail ? userEmail.split('@')[0] : 'Employé'),
-            email: userEmail,
-            role: determinedRole,
-            authUid: uid,
-            isActive: true
-          } as any;
+          await staffCollection.set(fixedStaffId, newStaffRecord);
+          staffDoc = newStaffRecord as any;
         } catch (createErr) {
           console.warn('[LOGIN] Auto-provisioning failed:', createErr);
           staffDoc = {
-            id: `staff_${uid}`,
+            id: fixedStaffId,
             name: displayName || (userEmail ? userEmail.split('@')[0] : 'Employé'),
             email: userEmail,
             role: determinedRole,
+            authUid: uid,
             isActive: true
           } as any;
         }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { useToast } from '../../components/ui';
 import {
@@ -18,9 +18,12 @@ import {
   StickyNote,
   Filter,
   Globe,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { CustomerHistoryModal } from './CustomerHistoryModal';
 import { usePermissions } from '../../hooks/usePermissions';
+import { exportToExcel } from '../../lib/excelExport';
+import { getAll } from '../../lib/firebaseOps';
 
 // --- Types ---
 
@@ -97,6 +100,7 @@ const translations = {
     editClient: 'Modifier',
     deleteClient: 'Supprimer',
     requiredField: 'Ce champ est requis',
+    exportExcel: 'Exporter Excel',
   },
   en: {
     pageTitle: 'Clients & Customers',
@@ -154,6 +158,7 @@ const translations = {
     editClient: 'Edit',
     deleteClient: 'Delete',
     requiredField: 'This field is required',
+    exportExcel: 'Export to Excel',
   },
   ar: {
     pageTitle: 'العملاء',
@@ -211,13 +216,14 @@ const translations = {
     editClient: 'تعديل',
     deleteClient: 'حذف',
     requiredField: 'هذا الحقل مطلوب',
+    exportExcel: 'تصدير إكسيل',
   },
 };
 
 // --- Data Store ---
 const INITIAL_CLIENTS: Client[] = [];
 
-import { useCustomers } from '../../lib/customersStore';
+import { useCustomers, purgeDemoCustomers } from '../../lib/customersStore';
 
 // --- Component ---
 
@@ -235,6 +241,16 @@ export function ClientsPage() {
   const { showToast } = useToast();
 
   const { customers: clients, addCustomer, updateCustomer: updateStoreCustomer, deleteCustomer: deleteStoreCustomer } = useCustomers();
+
+  const [allInvoices, setAllInvoices] = useState<any[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    purgeDemoCustomers();
+    getAll('invoices').then(res => setAllInvoices(res || [])).catch(() => {});
+    getAll('orders').then(res => setAllOrders(res || [])).catch(() => {});
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'particulier' | 'revendeur' | 'entreprise' | 'web'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -261,10 +277,92 @@ export function ClientsPage() {
   // --- Filter & Search ---
   const filteredClients = clients.filter(c => {
     const matchesType = typeFilter === 'all' || c.type === typeFilter || (typeFilter === 'web' && (c.type === 'web' || c.source === 'website'));
-    const q = searchQuery.toLowerCase();
-    const matchesSearch = !q || c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.address.toLowerCase().includes(q);
+    const q = searchQuery.toLowerCase().trim();
+    const name = (c.name || '').toLowerCase();
+    const phone = (c.phone || '').toLowerCase();
+    const address = (c.address || '').toLowerCase();
+    const matchesSearch = !q || name.includes(q) || phone.includes(q) || address.includes(q);
     return matchesType && matchesSearch;
   });
+
+  // --- Transactions for History Modal ---
+  const customerTransactions = useMemo(() => {
+    if (!historyClient) return [];
+    const cleanPhone = (historyClient.phone || '').replace(/[\s\-\+\(\)]/g, '').toLowerCase();
+    const cleanName = (historyClient.name || '').trim().toLowerCase();
+
+    const txs: any[] = [];
+
+    allInvoices.forEach((inv: any) => {
+      const invPhone = (inv.customerPhone || '').replace(/[\s\-\+\(\)]/g, '').toLowerCase();
+      const invName = (inv.customerName || '').trim().toLowerCase();
+      const match = (cleanPhone && invPhone && invPhone === cleanPhone) || (cleanName && invName && invName === cleanName);
+      if (match) {
+        txs.push({
+          id: inv.id,
+          date: inv.dateStr || inv.createdAt || '',
+          items: (inv.items || []).map((it: any) => ({
+            name: it.productName || it.name || 'Article',
+            quantity: it.quantity || 1,
+            price: it.unitPrice || 0
+          })),
+          total: inv.totalPrice || 0,
+          paymentMethod: inv.paymentMethod || 'cash'
+        });
+      }
+    });
+
+    allOrders.forEach((ord: any) => {
+      const ordPhone = (ord.customerPhone || '').replace(/[\s\-\+\(\)]/g, '').toLowerCase();
+      const ordName = (ord.customerName || '').trim().toLowerCase();
+      const match = (cleanPhone && ordPhone && ordPhone === cleanPhone) || (cleanName && ordName && ordName === cleanName);
+      if (match && !txs.some(t => t.id === ord.id)) {
+        txs.push({
+          id: ord.id,
+          date: ord.dateStr || ord.createdAt || '',
+          items: (ord.items || []).map((it: any) => ({
+            name: it.name || it.productName || 'Article',
+            quantity: it.quantity || 1,
+            price: it.price || it.unitPrice || 0
+          })),
+          total: ord.totalAmount || 0,
+          paymentMethod: ord.paymentMethod || 'cash'
+        });
+      }
+    });
+
+    return txs;
+  }, [historyClient, allInvoices, allOrders]);
+
+  // --- Excel Export ---
+  const handleExportExcel = () => {
+    exportToExcel({
+      filename: `Clients_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: 'Clients',
+      columns: [
+        { header: 'ID', key: 'id', width: 12 },
+        { header: t.colName, key: 'name', width: 25 },
+        { header: t.colPhone, key: 'phone', width: 18 },
+        { header: t.labelEmail, key: 'email', width: 25 },
+        { header: t.colAddress, key: 'address', width: 25 },
+        { header: t.colType, key: 'type', width: 15 },
+        { header: t.colTotalSpent, key: 'totalSpent', width: 20 },
+        { header: t.colPurchases, key: 'purchaseCount', width: 15 },
+        { header: t.colDate, key: 'createdAt', width: 18 },
+      ],
+      data: filteredClients.map(c => ({
+        id: c.id,
+        name: c.name || '',
+        phone: c.phone || '',
+        email: c.email || '',
+        address: c.address || '',
+        type: c.type || '',
+        totalSpent: typeof c.totalSpent === 'number' ? c.totalSpent : (Number(c.totalSpent) || 0),
+        purchaseCount: typeof c.purchaseCount === 'number' ? c.purchaseCount : (Number(c.purchaseCount) || 0),
+        createdAt: c.createdAt || ''
+      }))
+    });
+  };
 
   // --- Modal helpers ---
   const openAddModal = () => {
@@ -353,19 +451,44 @@ export function ClientsPage() {
   };
 
   return (
-    <div className="factures-page-container">
+    <div className="factures-page-container clients-page">
       {/* Page Header */}
       <div className="page-header-row">
         <div>
           <h1 className="page-title"><Users size={28} className="title-icon" /> {t.pageTitle}</h1>
           <p className="page-subtitle">{t.pageSubtitle}</p>
         </div>
-        {canCreate && (
-          <button className="btn-primary-action" type="button" onClick={openAddModal}>
-            <Plus size={18} />
-            <span>{t.addClient}</span>
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {canExport && (
+            <button
+              className="btn-secondary-action"
+              type="button"
+              onClick={handleExportExcel}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '9px 16px',
+                borderRadius: 12,
+                border: '1px solid var(--border-secondary)',
+                background: 'var(--bg-elevated)',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.85rem'
+              }}
+            >
+              <FileSpreadsheet size={18} color="#10b981" />
+              <span>{t.exportExcel}</span>
+            </button>
+          )}
+          {canCreate && (
+            <button className="btn-primary-action" type="button" onClick={openAddModal}>
+              <Plus size={18} />
+              <span>{t.addClient}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards (Matching FacturesPage KPI Grid) */}
@@ -482,23 +605,28 @@ export function ClientsPage() {
                     ? { background: 'rgba(168, 85, 247, 0.12)', color: '#a855f7' }
                     : undefined;
 
+                  const clientName = client.name || 'Client';
+                  const avatarInitial = (clientName.trim().charAt(0) || 'C').toUpperCase();
+                  const totalSpentNum = typeof client.totalSpent === 'number' ? client.totalSpent : (Number(client.totalSpent) || 0);
+                  const purchaseCountNum = typeof client.purchaseCount === 'number' ? client.purchaseCount : (Number(client.purchaseCount) || 0);
+
                   return (
                     <tr key={client.id}>
                       <td className="cell-name">
                         <div className="inv-customer-cell">
                           <span className="customer-name" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span className="client-avatar">{client.name.charAt(0).toUpperCase()}</span>
-                            <span>{client.name}</span>
+                            <span className="client-avatar">{avatarInitial}</span>
+                            <span>{clientName}</span>
                           </span>
                           {client.email && <span className="customer-sub">{client.email}</span>}
                         </div>
                       </td>
-                      <td><span className="mono">{client.phone}</span></td>
-                      <td><span className="date-text">{client.address}</span></td>
+                      <td><span className="mono">{client.phone || '-'}</span></td>
+                      <td><span className="date-text">{client.address || '-'}</span></td>
                       <td><span className={badgeClass} style={badgeStyle}>{badge.label}</span></td>
-                      <td><span className="total-price-text">{canViewFinancials ? `${client.totalSpent.toLocaleString()} ${t.dzdSuffix}` : '**** DZD'}</span></td>
-                      <td><span className="mono" style={{ fontWeight: 700 }}>{client.purchaseCount}</span></td>
-                      <td><div className="date-time-cell"><span className="date-text">{client.createdAt}</span></div></td>
+                      <td><span className="total-price-text">{canViewFinancials ? `${totalSpentNum.toLocaleString()} ${t.dzdSuffix}` : '**** DZD'}</span></td>
+                      <td><span className="mono" style={{ fontWeight: 700 }}>{purchaseCountNum}</span></td>
+                      <td><div className="date-time-cell"><span className="date-text">{client.createdAt || '-'}</span></div></td>
                       <td>
                         <div className="action-buttons-cell">
                           <button
@@ -613,23 +741,23 @@ export function ClientsPage() {
           onClose={() => setHistoryClient(null)}
           customer={{
             id: historyClient.id,
-            name: historyClient.name,
-            phone: historyClient.phone,
-            totalSpent: historyClient.totalSpent,
-            visitCount: historyClient.purchaseCount,
+            name: historyClient.name || 'Client',
+            phone: historyClient.phone || '',
+            totalSpent: typeof historyClient.totalSpent === 'number' ? historyClient.totalSpent : 0,
+            visitCount: typeof historyClient.purchaseCount === 'number' ? historyClient.purchaseCount : 0,
           }}
-          transactions={[]}
+          transactions={customerTransactions}
         />
       )}
 
       <style>{`
         .clients-page {
-          padding: 32px;
-          max-width: 1400px;
-          margin: 0 auto;
+          padding: 0;
+          max-width: 100%;
+          margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 16px;
         }
 
         .page-header-row {

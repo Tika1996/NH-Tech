@@ -751,7 +751,7 @@ export function Dashboard() {
         .dashboard-container {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 16px;
         }
 
         .dashboard-header-row {

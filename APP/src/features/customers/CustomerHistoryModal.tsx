@@ -87,10 +87,12 @@ export function CustomerHistoryModal({
 
   if (!isOpen) return null;
 
-  const formatCurrency = (amount: number) => `${amount.toLocaleString()} ${t.dzdSuffix}`;
+  const formatCurrency = (amount?: number) => `${(amount || 0).toLocaleString()} ${t.dzdSuffix}`;
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
     return date.toLocaleDateString(language === 'ar' ? 'ar-DZ' : 'fr-FR', {
       day: 'numeric',
       month: 'short',
@@ -120,21 +122,21 @@ export function CustomerHistoryModal({
         <div className="modal-body">
           {/* Customer Summary */}
           <div className="customer-summary">
-            <h4>{customer.name}</h4>
-            <p className="customer-phone">{customer.phone}</p>
+            <h4>{customer?.name || 'Client'}</h4>
+            <p className="customer-phone">{customer?.phone || '-'}</p>
 
             <div className="summary-stats">
               <div className="stat">
                 <DollarSign size={20} />
                 <div>
-                  <span className="stat-value">{formatCurrency(customer.totalSpent)}</span>
+                  <span className="stat-value">{formatCurrency(customer?.totalSpent || 0)}</span>
                   <span className="stat-label">{t.totalSpent}</span>
                 </div>
               </div>
               <div className="stat">
                 <ShoppingBag size={20} />
                 <div>
-                  <span className="stat-value">{customer.visitCount}</span>
+                  <span className="stat-value">{customer?.visitCount || 0}</span>
                   <span className="stat-label">{t.visits}</span>
                 </div>
               </div>

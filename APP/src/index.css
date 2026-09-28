@@ -285,3 +285,21 @@ canvas {
 .dark .input:focus {
   box-shadow: 0 0 0 3px rgba(74, 144, 194, 0.2);
 }
+
+/* BiDi Isolation: Prevent Phone Numbers from Inverting in Arabic (RTL) */
+.phone-number,
+[data-phone],
+a[href^="tel:"],
+.ltr-text,
+bdi[dir="ltr"],
+span[dir="ltr"] {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+
+[dir="rtl"] a[href^="tel:"],
+[dir="rtl"] .phone-number,
+[dir="rtl"] [data-phone] {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}

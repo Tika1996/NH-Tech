@@ -345,7 +345,16 @@ export function Header({ mode = 'app' }: { mode?: 'app' | 'public' }) {
 
         @media (max-width: 768px) {
           .header {
-            padding: 0 var(--space-4);
+            padding: 0 10px;
+            height: 56px;
+          }
+
+          .header-left {
+            gap: 8px;
+          }
+
+          .header-right {
+            gap: 6px;
           }
 
           .header-btn.header-menu-btn {
@@ -353,7 +362,8 @@ export function Header({ mode = 'app' }: { mode?: 'app' | 'public' }) {
           }
 
           .header-title {
-            font-size: var(--text-lg);
+            font-size: 1.05rem;
+            max-width: 110px;
           }
 
           .header-user {
@@ -361,7 +371,7 @@ export function Header({ mode = 'app' }: { mode?: 'app' | 'public' }) {
           }
 
           .header-btn {
-            padding: var(--space-2);
+            padding: 5px;
           }
         }
       `}</style>

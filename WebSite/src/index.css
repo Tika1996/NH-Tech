@@ -2854,3 +2854,22 @@ p {
 .nh-adaptive-text-sub {
   color: var(--text-on-surface);
 }
+
+/* BiDi Isolation: Prevent Phone Numbers from Inverting in Arabic (RTL) */
+.phone-number,
+[data-phone],
+a[href^="tel:"],
+.ltr-text,
+bdi[dir="ltr"],
+span[dir="ltr"] {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+
+[dir="rtl"] a[href^="tel:"],
+[dir="rtl"] .phone-number,
+[dir="rtl"] [data-phone] {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+

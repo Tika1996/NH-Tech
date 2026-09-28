@@ -49,6 +49,7 @@ export const REPAIR_STATUS_CONFIG: Record<RepairStatus, {
   notified:         { label: { fr: 'Client notifié',      ar: 'تم إعلام العميل',      en: 'Client Notified' },         color: '#059669', bg: 'rgba(5, 150, 105, 0.12)',   pillClass: 'paid' },
   picked_up:        { label: { fr: 'Récupéré',            ar: 'تم الاستلام',          en: 'Picked Up' },               color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)', pillClass: 'cancelled' },
   unreachable:      { label: { fr: 'Non joignable',       ar: 'غير متاح',             en: 'Unreachable' },             color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)',   pillClass: 'returned' },
+  out_of_service:   { label: { fr: 'Hors Service',        ar: 'خارج الخدمة',          en: 'Out of Service' },          color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)',   pillClass: 'returned' },
   cancelled:        { label: { fr: 'Annulé',              ar: 'ملغى',                 en: 'Cancelled' },               color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)', pillClass: 'cancelled' },
 };
 
@@ -238,8 +239,11 @@ export function RepairsPage() {
             <option value="repairing">{t('En réparation', 'جارٍ الإصلاح', 'Repairing')}</option>
             <option value="waiting_parts">{t('Attente de pièces', 'في انتظار القطع', 'Waiting for Parts')}</option>
             <option value="completed">{t('Terminé / Prêt', 'مكتمل / جاهز', 'Completed / Ready')}</option>
+            <option value="out_of_service">{t('Hors Service (Non réparé)', 'خارج الخدمة (غير قابل للإصلاح)', 'Out of Service (Unrepairable)')}</option>
+            <option value="notified">{t('Client notifié', 'تم إعلام العميل', 'Client Notified')}</option>
             <option value="picked_up">{t('Récupéré par client', 'تم الاستلام', 'Picked Up by Client')}</option>
             <option value="unreachable">{t('Non joignable', 'غير متاح', 'Unreachable')}</option>
+            <option value="cancelled">{t('Annulé', 'ملغى', 'Cancelled')}</option>
           </select>
 
           {/* Device Type Filter */}
@@ -392,12 +396,12 @@ export function RepairsPage() {
       {/* Shared CSS styling matching FacturesPage */}
       <style>{`
         .factures-page-container {
-          padding: 32px;
-          max-width: 1400px;
-          margin: 0 auto;
+          padding: 0;
+          max-width: 100%;
+          margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 16px;
         }
 
         .page-header-row {
@@ -409,7 +413,7 @@ export function RepairsPage() {
 
         .page-title {
           font-family: var(--font-display);
-          font-size: var(--text-4xl);
+          font-size: 1.8rem;
           font-weight: 800;
           margin: 0;
           display: flex;

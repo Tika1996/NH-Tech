@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, addDoc, setDoc, doc, query, where, Timestamp, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, addDoc, setDoc, doc, query, where, Timestamp, getDoc, orderBy, limit } from 'firebase/firestore';
 import { getAuth, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { generateNextId } from './idGenerator';
 
@@ -289,7 +289,50 @@ const DEMO_PIECES: WebsitePiece[] = [
   }
 ];
 
-export async function getPublishedLaptops(): Promise<WebsiteLaptop[]> {
+// ============================================================
+// CACHE: Laptops & Pieces Catalog (10-minute TTL to save 90%+ Firebase reads)
+// ============================================================
+interface CatalogCacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const CATALOG_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+let _cachedLaptops: CatalogCacheEntry<WebsiteLaptop[]> | null = null;
+let _cachedPieces: CatalogCacheEntry<WebsitePiece[]> | null = null;
+
+function loadFromSessionCache<T>(key: string): T | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed: CatalogCacheEntry<T> = JSON.parse(raw);
+    if (Date.now() - parsed.timestamp < CATALOG_CACHE_TTL_MS && Array.isArray(parsed.data) && parsed.data.length > 0) {
+      return parsed.data;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveToSessionCache<T>(key: string, data: T) {
+  try {
+    const entry: CatalogCacheEntry<T> = { data, timestamp: Date.now() };
+    sessionStorage.setItem(key, JSON.stringify(entry));
+  } catch { /* ignore */ }
+}
+
+export async function getPublishedLaptops(forceRefresh = false): Promise<WebsiteLaptop[]> {
+  if (!forceRefresh) {
+    if (_cachedLaptops && (Date.now() - _cachedLaptops.timestamp < CATALOG_CACHE_TTL_MS)) {
+      return _cachedLaptops.data;
+    }
+    const sessionData = loadFromSessionCache<WebsiteLaptop[]>('nhtech_cached_laptops');
+    if (sessionData && sessionData.length > 0) {
+      _cachedLaptops = { data: sessionData, timestamp: Date.now() };
+      return sessionData;
+    }
+  }
+
   try {
     const config = getConfig();
     if (config.apiKey && config.projectId) {
@@ -298,6 +341,9 @@ export async function getPublishedLaptops(): Promise<WebsiteLaptop[]> {
       const results = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as WebsiteLaptop))
         .filter(l => l.publishedOnWebsite !== false && (l.stock ?? 0) > 0);
+
+      _cachedLaptops = { data: results, timestamp: Date.now() };
+      saveToSessionCache('nhtech_cached_laptops', results);
       return results;
     }
   } catch (error) {
@@ -326,7 +372,18 @@ export interface WebsitePiece {
   publishedOnWebsite: boolean;
 }
 
-export async function getPublishedPieces(): Promise<WebsitePiece[]> {
+export async function getPublishedPieces(forceRefresh = false): Promise<WebsitePiece[]> {
+  if (!forceRefresh) {
+    if (_cachedPieces && (Date.now() - _cachedPieces.timestamp < CATALOG_CACHE_TTL_MS)) {
+      return _cachedPieces.data;
+    }
+    const sessionData = loadFromSessionCache<WebsitePiece[]>('nhtech_cached_pieces');
+    if (sessionData && sessionData.length > 0) {
+      _cachedPieces = { data: sessionData, timestamp: Date.now() };
+      return sessionData;
+    }
+  }
+
   try {
     const config = getConfig();
     if (config.apiKey && config.projectId) {
@@ -335,6 +392,9 @@ export async function getPublishedPieces(): Promise<WebsitePiece[]> {
       const results = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as WebsitePiece))
         .filter(p => p.publishedOnWebsite !== false && (p.stock ?? 0) > 0);
+
+      _cachedPieces = { data: results, timestamp: Date.now() };
+      saveToSessionCache('nhtech_cached_pieces', results);
       return results;
     }
   } catch (error) {
@@ -399,7 +459,13 @@ export async function submitWebOrder(data: WebOrderData): Promise<string> {
     const config = getConfig();
     if (config.apiKey && config.projectId) {
       await ensureAuthenticated();
-      const ordersSnap = await getDocs(collection(db, 'orders'));
+      // Fetch only the 5 most recent orders by ID instead of reading the entire collection
+      const recentOrdersQuery = query(
+        collection(db, 'orders'),
+        orderBy('__name__', 'desc'),
+        limit(5)
+      );
+      const ordersSnap = await getDocs(recentOrdersQuery);
       existingOrders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     }
   } catch (e) {
@@ -562,19 +628,49 @@ export async function trackDeliveryPackage(code: string, phone: string): Promise
     if (config.apiKey && config.projectId) {
       await ensureAuthenticated();
 
-      const snapshot = await getDocs(collection(db, 'orders'));
-      const foundDoc = snapshot.docs.find(d => {
-        const docId = d.id.toUpperCase();
-        const data = d.data() || {};
-        const storedId = (data.id || '').toUpperCase();
-        const trackingNum = (data.trackingNumber || '').toUpperCase();
-        const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
+      let foundDoc: any = null;
 
-        const codeMatch = docId === upperInput || storedId === upperInput || (upperInput.length >= 4 && (docId.includes(upperInput) || storedId.includes(upperInput))) || (trackingNum && trackingNum.includes(upperInput));
-        const phoneMatch = cleanPhone.length >= 4 && (rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone));
+      // 1. Direct targeted lookup by Document ID (1 single read)
+      try {
+        const directSnap = await getDoc(doc(db, 'orders', upperInput));
+        if (directSnap.exists()) {
+          const data = directSnap.data() || {};
+          const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
+          if (!cleanPhone || cleanPhone.length < 4 || rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone)) {
+            foundDoc = directSnap;
+          }
+        }
+      } catch { /* ignore */ }
 
-        return codeMatch && phoneMatch;
-      });
+      // 2. Targeted query by trackingNumber (at most 1 read)
+      if (!foundDoc) {
+        try {
+          const qTrack = query(collection(db, 'orders'), where('trackingNumber', '==', upperInput), limit(1));
+          const snapTrack = await getDocs(qTrack);
+          if (!snapTrack.empty) {
+            const data = snapTrack.docs[0].data() || {};
+            const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
+            if (!cleanPhone || cleanPhone.length < 4 || rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone)) {
+              foundDoc = snapTrack.docs[0];
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      // 3. Targeted query by customerPhone (at most 5 reads)
+      if (!foundDoc && cleanPhone && cleanPhone.length >= 6) {
+        try {
+          const qPhone = query(collection(db, 'orders'), where('customerPhone', '==', cleanPhone), limit(5));
+          const snapPhone = await getDocs(qPhone);
+          if (!snapPhone.empty) {
+            foundDoc = snapPhone.docs.find(d => {
+              const docId = d.id.toUpperCase();
+              const storedId = (d.data().id || '').toUpperCase();
+              return docId === upperInput || storedId === upperInput || (upperInput.length >= 4 && (docId.includes(upperInput) || storedId.includes(upperInput)));
+            }) || snapPhone.docs[0];
+          }
+        } catch { /* ignore */ }
+      }
 
       if (foundDoc) {
         const data = foundDoc.data();
@@ -739,6 +835,7 @@ const REPAIR_STATUS_MAP: Record<string, { fr: string; ar: string; color: string 
   notified:         { fr: 'Réparation terminée — Vous avez été contacté', ar: 'تم الإصلاح — تم الاتصال بكم', color: '#059669' },
   picked_up:        { fr: 'Appareil remis au client', ar: 'تم تسليم الجهاز', color: '#64748B' },
   unreachable:      { fr: 'Réparation terminée — Veuillez nous contacter', ar: 'تم الإصلاح — يرجى الاتصال بنا', color: '#EF4444' },
+  out_of_service:   { fr: 'Appareil Hors Service (Non réparable)', ar: 'الجهاز خارج الخدمة (غير قابل للإصلاح)', color: '#EF4444' },
   cancelled:        { fr: 'Dossier annulé', ar: 'ملف ملغى', color: '#475569' },
 };
 
@@ -753,19 +850,50 @@ export async function trackRepair(code: string, phone: string): Promise<Tracking
     if (config.apiKey && config.projectId) {
       await ensureAuthenticated();
 
-      const snapshot = await getDocs(collection(db, 'repairs'));
-      const foundDoc = snapshot.docs.find(d => {
-        const docId = d.id.toUpperCase();
-        const data = d.data() || {};
-        const storedId = (data.id || '').toUpperCase();
-        const trackingCode = (data.trackingCode || '').toUpperCase();
-        const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
+      let foundDoc: any = null;
 
-        const codeMatch = docId === cleanCode || storedId === cleanCode || trackingCode === cleanCode || (cleanCode.length >= 4 && (docId.includes(cleanCode) || storedId.includes(cleanCode) || trackingCode.includes(cleanCode)));
-        const phoneMatch = cleanPhone.length >= 4 && (rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone));
+      // 1. Direct targeted lookup by Document ID (1 single read)
+      try {
+        const directSnap = await getDoc(doc(db, 'repairs', cleanCode));
+        if (directSnap.exists()) {
+          const data = directSnap.data() || {};
+          const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
+          if (!cleanPhone || cleanPhone.length < 4 || rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone)) {
+            foundDoc = directSnap;
+          }
+        }
+      } catch { /* ignore */ }
 
-        return codeMatch && phoneMatch;
-      });
+      // 2. Targeted query by trackingCode (at most 1 read)
+      if (!foundDoc) {
+        try {
+          const qTrack = query(collection(db, 'repairs'), where('trackingCode', '==', cleanCode), limit(1));
+          const snapTrack = await getDocs(qTrack);
+          if (!snapTrack.empty) {
+            const data = snapTrack.docs[0].data() || {};
+            const rawPhone = String(data.customerPhone || '').replace(/\D/g, '');
+            if (!cleanPhone || cleanPhone.length < 4 || rawPhone.endsWith(cleanPhone) || cleanPhone.endsWith(rawPhone) || rawPhone.includes(cleanPhone)) {
+              foundDoc = snapTrack.docs[0];
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      // 3. Targeted query by customerPhone (at most 5 reads)
+      if (!foundDoc && cleanPhone && cleanPhone.length >= 6) {
+        try {
+          const qPhone = query(collection(db, 'repairs'), where('customerPhone', '==', cleanPhone), limit(5));
+          const snapPhone = await getDocs(qPhone);
+          if (!snapPhone.empty) {
+            foundDoc = snapPhone.docs.find(d => {
+              const docId = d.id.toUpperCase();
+              const storedId = (d.data().id || '').toUpperCase();
+              const trCode = (d.data().trackingCode || '').toUpperCase();
+              return docId === cleanCode || storedId === cleanCode || trCode === cleanCode || (cleanCode.length >= 4 && (docId.includes(cleanCode) || storedId.includes(cleanCode) || trCode.includes(cleanCode)));
+            }) || snapPhone.docs[0];
+          }
+        } catch { /* ignore */ }
+      }
 
       if (foundDoc) {
         const data = foundDoc.data();

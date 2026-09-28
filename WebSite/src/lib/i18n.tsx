@@ -258,7 +258,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'contact.title': { fr: 'Contactez NH TECH', ar: 'تواصل مع إن إتش تيك', en: 'Contact NH TECH' },
   'contact.subtitle': { fr: 'Notre équipe d\'experts est à votre disposition en atelier ou en ligne', ar: 'فريق خبرائنا في خدمتكم في الورشة أو عبر الإنترنت', en: 'Our expert team is available at our workshop or online' },
   'contact.address': { fr: 'Adresse de l\'atelier', ar: 'عنوان الورشة والمحل', en: 'Workshop & Shop Address' },
-  'contact.address.value': { fr: 'Bouzaréah, Alger, Algérie', ar: 'بوزريعة، الجزائر العاصمة', en: 'Bouzareah, Algiers, Algeria' },
+  'contact.address.value': { fr: 'Bab Ezzouar, Alger, Algérie', ar: 'باب الزوار، الجزائر العاصمة', en: 'Bab Ezzouar, Algiers, Algeria' },
   'contact.phone': { fr: 'Téléphone SAV / Vente', ar: 'الهاتف / المبيعات والصيانة', en: 'Phone / Sales & Support' },
   'contact.email': { fr: 'Email contact', ar: 'البريد الإلكتروني', en: 'Contact Email' },
   'contact.hours': { fr: 'Horaires d\'ouverture', ar: 'أوقات العمل', en: 'Opening Hours' },

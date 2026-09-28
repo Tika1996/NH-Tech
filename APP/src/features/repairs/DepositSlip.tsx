@@ -118,6 +118,16 @@ export function DepositSlip({ repair, onClose }: DepositSlipProps) {
             padding: 2px 8px;
             border-radius: 4px;
           }
+          .slip-diag-note {
+            margin: 12px 0;
+            padding: 10px 14px;
+            background: #fffbeb;
+            border: 1.5px solid #f59e0b;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
           .slip-legal {
             margin-top: 20px;
             padding: 10px;
@@ -188,8 +198,8 @@ export function DepositSlip({ repair, onClose }: DepositSlipProps) {
             {/* Header */}
             <div className="slip-header" style={{ textAlign: 'center', borderBottom: '2px solid #1a1a2e', paddingBottom: 12, marginBottom: 16 }}>
               <h1 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0057FF' }}>{brand.name.fr}</h1>
-              <p style={{ fontSize: '0.75rem', color: '#555', marginTop: 4 }}>
-                {brand.subtitle.fr} — Tél: {brand.company?.phone || '—'}
+              <p style={{ fontSize: '0.78rem', color: '#475569', marginTop: 4, fontWeight: 700 }}>
+                {brand.subtitle.fr} — SAV / Tech: <strong style={{ color: '#0057FF' }}><bdi dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>0770 54 72 57</bdi></strong> • Ventes: <strong><bdi dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>0770 54 72 25</bdi></strong>
               </p>
             </div>
 
@@ -232,7 +242,7 @@ export function DepositSlip({ repair, onClose }: DepositSlipProps) {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '3px 0' }}>
                 <span style={{ color: '#666', fontWeight: 600 }}>{isAr ? 'الهاتف' : isEn ? 'Phone Number' : 'N° Téléphone'}:</span>
-                <strong style={{ color: '#1a1a2e' }}>{repair.customerPhone}</strong>
+                <strong style={{ color: '#1a1a2e' }}><bdi dir="ltr" style={{ direction: 'ltr', unicodeBidi: 'isolate' }}>{repair.customerPhone}</bdi></strong>
               </div>
             </div>
 
@@ -287,9 +297,37 @@ export function DepositSlip({ repair, onClose }: DepositSlipProps) {
             </div>
 
             {/* Date */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '4px 0', marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '4px 0', marginBottom: 10 }}>
               <span style={{ color: '#666', fontWeight: 600 }}>{isAr ? 'تاريخ الإيداع' : isEn ? 'Deposit Date' : 'Date de dépôt'}:</span>
               <strong style={{ color: '#1a1a2e' }}>{repair.depositDate} — {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</strong>
+            </div>
+
+            {/* Diagnostic Fee Note */}
+            <div className="slip-diag-note" style={{
+              margin: '10px 0 14px 0',
+              padding: '10px 14px',
+              background: '#fffbeb',
+              border: '1.5px solid #f59e0b',
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#b45309' }}>
+                    {isAr ? 'ملاحظة هامة: تكلفة التشخيص هي 1000 دج' : isEn ? 'Important: Diagnostic fee is 1,000 DZD' : 'Note : Le diagnostic est de 1 000 DZD'}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#92400e', fontWeight: 600 }}>
+                    {isAr ? 'Le diagnostic c\'est 1000 DZD' : 'التشخيص: 1000 دج'}
+                  </div>
+                </div>
+              </div>
+              <strong style={{ fontSize: '1rem', fontWeight: 900, color: '#b45309', whiteSpace: 'nowrap' }}>
+                1 000 DZD
+              </strong>
             </div>
 
             {/* Legal */}

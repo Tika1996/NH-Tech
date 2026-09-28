@@ -27,7 +27,7 @@ import type { PosSaleTransaction } from '../../components/pos/PosCartModal';
 import { ReturnSaleModal } from '../../components/pos/ReturnSaleModal';
 import { usePermissions } from '../../hooks/usePermissions';
 
-import { getAll, set } from '../../lib/firebaseOps';
+import { getAll, set, getById } from '../../lib/firebaseOps';
 
 // --- Initial Invoices Data ---
 const INITIAL_INVOICES: PosSaleTransaction[] = [];
@@ -180,32 +180,12 @@ export function FacturesPage() {
         console.warn('[FACTURES] Failed to persist return to invoices:', err);
       }
 
-      // Also persist to the correct transactions collection
-      if (originalTx) {
-        const txCollection = originalTx.items.some(i => i.productType === 'laptop')
-          ? 'transactions_laptops'
-          : 'transactions_pieces';
+      // Update corresponding web order in 'orders' collection if applicable (targeted single document lookup)
+      if (originalTx?.orderId) {
         try {
-          await set<PosSaleTransaction>(txCollection, transactionId, updatedTx);
-          console.log(`[FACTURES] Return persisted to ${txCollection}:`, transactionId);
-        } catch (err) {
-          console.warn(`[FACTURES] Failed to persist return to ${txCollection}:`, err);
-        }
-
-        // Also update corresponding web order in 'orders' collection if applicable
-        try {
-          const targetOrderId = originalTx?.orderId || transactionId;
-          const allOrders = await getAll<any>('orders');
-          const webOrder = allOrders.find((o: any) =>
-            o.id === targetOrderId ||
-            o.id === transactionId ||
-            `FAC-WEB-${(o.id || '').replace(/^CMD-WEB-?/i, '')}` === transactionId ||
-            `FACT-${(o.id || '').replace(/[^A-Za-z0-9]/g, '')}` === transactionId ||
-            transactionId.includes(o.id || '') ||
-            (originalTx && o.customerName === originalTx.customerName && Math.abs((o.totalAmount || 0) - (originalTx.totalPrice || 0)) < 1)
-          );
+          const webOrder = await getById<any>('orders', originalTx.orderId);
           if (webOrder) {
-            await set<any>('orders', webOrder.id, { ...webOrder, status: 'returned', isRefunded: true });
+            await set<any>('orders', originalTx.orderId, { ...webOrder, status: 'returned', isRefunded: true });
           }
         } catch (err) {
           console.warn('[FACTURES] Notice updating web order:', err);
@@ -816,12 +796,12 @@ export function FacturesPage() {
 
       <style>{`
         .factures-page-container {
-          padding: 32px;
-          max-width: 1400px;
-          margin: 0 auto;
+          padding: 0;
+          max-width: 100%;
+          margin: 0;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 16px;
         }
 
         .page-header-row {
@@ -833,7 +813,7 @@ export function FacturesPage() {
 
         .page-title {
           font-family: var(--font-display);
-          font-size: var(--text-4xl);
+          font-size: 1.8rem;
           font-weight: 800;
           margin: 0;
           display: flex;

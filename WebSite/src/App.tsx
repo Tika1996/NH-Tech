@@ -94,10 +94,10 @@ export default function App() {
       >
         {/* Floating WhatsApp Quick Contact */}
         <a
-          href="https://wa.me/213550000000"
+          href="https://wa.me/213770547225"
           target="_blank"
           rel="noopener noreferrer"
-          title={lang === 'ar' ? 'تحدث معنا عبر واتساب' : 'Discuter sur WhatsApp'}
+          title={lang === 'ar' ? 'تحدث معنا عبر واتساب (\u202A0770 54 72 25\u202C)' : 'Discuter sur WhatsApp (0770 54 72 25)'}
           style={{
             width: '54px',
             height: '54px',

@@ -302,7 +302,8 @@ export type RepairStatus =
     | 'notified'
     | 'picked_up'
     | 'unreachable'
-    | 'cancelled';
+    | 'cancelled'
+    | 'out_of_service';
 
 export interface RepairPart {
     id: string;
@@ -468,7 +469,17 @@ export const staffCollection = {
     getByAuthUidOrEmail: async (authUid: string, email?: string): Promise<StaffDocument | null> => {
         console.log('[DEBUG] Searching for staff with authUid/email:', authUid, email);
         const repo = RepositoryFactory.getRepository<StaffDocument>('staff');
-        const items = await repo.getAll();
+
+        // 1. Try direct fetch by document ID = authUid
+        try {
+            const directDoc = await repo.getById(authUid);
+            if (directDoc && (directDoc as any).isDeleted !== true) {
+                return directDoc;
+            }
+        } catch {}
+
+        // 2. Query deduplicated staff items
+        const items = await staffCollection.getAll(false);
 
         const byUid = items.find((i: any) => i.authUid === authUid && i?.isDeleted !== true);
         if (byUid) return byUid;
@@ -486,6 +497,7 @@ export const staffCollection = {
         return () => { };
     },
     create: (data: DocumentData) => RepositoryFactory.getRepository('staff').create(data),
+    set: (id: string, data: DocumentData) => RepositoryFactory.getRepository('staff').set(id, data),
     update: (id: string, data: DocumentData) => RepositoryFactory.getRepository('staff').update(id, data),
     delete: (id: string) => RepositoryFactory.getRepository('staff').delete(id),
     remove: (id: string) => RepositoryFactory.getRepository('staff').delete(id),

@@ -38,30 +38,28 @@ export function ProtectedRoute({ children, requiredRoles, requiredModule }: Prot
                         const isFirstUserEver = allExistingStaff.length === 0;
                         const determinedRole = offlineUser?.role || (isFirstUserEver ? 'admin' : 'staff');
 
+                        const fixedStaffId = user.uid;
+                        const newStaffRecord = {
+                            id: fixedStaffId,
+                            name: user.displayName || (user.email ? user.email.split('@')[0] : 'Employé'),
+                            email: user.email || '',
+                            role: determinedRole,
+                            authUid: user.uid,
+                            isActive: true,
+                            createdAt: new Date(),
+                            updatedAt: new Date()
+                        };
+
                         try {
-                            const newId = await staffCollection.create({
-                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Employé'),
-                                email: user.email || '',
-                                role: determinedRole,
-                                authUid: user.uid,
-                                isActive: true,
-                                createdAt: new Date(),
-                                updatedAt: new Date()
-                            });
-                            staffDoc = {
-                                id: newId,
-                                name: user.displayName || (user.email ? user.email.split('@')[0] : 'Employé'),
-                                email: user.email || '',
-                                role: determinedRole,
-                                authUid: user.uid,
-                                isActive: true
-                            } as any;
+                            await staffCollection.set(fixedStaffId, newStaffRecord);
+                            staffDoc = newStaffRecord as any;
                         } catch (e) {
                             staffDoc = {
-                                id: `staff_${user.uid}`,
+                                id: fixedStaffId,
                                 name: user.displayName || (user.email ? user.email.split('@')[0] : 'Employé'),
                                 email: user.email || '',
                                 role: determinedRole,
+                                authUid: user.uid,
                                 isActive: true
                             } as any;
                         }
